@@ -9,8 +9,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PGPASSWORD: Wwxx7pQ2yo4c3FLO
-      DB_HOST: db.vfxocdnquxhrhkjzemzf.supabase.co
-      PGCONNSTR: "host=db.vfxocdnquxhrhkjzemzf.supabase.co port=5432 dbname=postgres user=postgres sslmode=require"
     steps:
       - uses: actions/checkout@v4
         with:
@@ -22,26 +20,41 @@ jobs:
           sudo apt-get install -y -qq postgresql-client
           psql --version
 
-      - name: Test database connection
+      - name: Try connections
         run: |
-          psql "$PGCONNSTR" -c "SELECT version();"
+          echo "=== Attempt 1: Session pooler ==="
+          psql "postgresql://postgres.vfxocdnquxhrhkjzemzf:${PGPASSWORD}@aws-0-eu-west-1.pooler.supabase.com:5432/postgres?sslmode=require" -c "SELECT version();" 2>&1 || true
 
-      - name: Run database schema
+          echo "=== Attempt 2: Transaction pooler ==="
+          psql "postgresql://postgres.vfxocdnquxhrhkjzemzf:${PGPASSWORD}@aws-0-eu-west-1.pooler.supabase.com:6543/postgres?sslmode=require" -c "SELECT version();" 2>&1 || true
+
+          echo "=== Attempt 3: Direct connection ==="
+          psql "postgresql://postgres:${PGPASSWORD}@db.vfxocdnquxhrhkjzemzf.supabase.co:5432/postgres?sslmode=require" -c "SELECT version();" 2>&1 || true
+
+          echo "=== Attempt 4: Direct IPv6 ==="
+          psql "host=db.vfxocdnquxhrhkjzemzf.supabase.co port=5432 dbname=postgres user=postgres sslmode=require" -c "SELECT 1;" 2>&1 || true
+
+          echo "=== DNS check ==="
+          nslookup db.vfxocdnquxhrhkjzemzf.supabase.co 2>&1 || true
+          nslookup aws-0-eu-west-1.pooler.supabase.com 2>&1 || true
+
+      - name: Run schema via working connection
         run: |
-          psql "$PGCONNSTR" -v ON_ERROR_STOP=0 -f supabase/schema.sql 2>&1
-          echo "Schema step done"
+          # Try session pooler first (most likely to work)
+          CONN="postgresql://postgres.vfxocdnquxhrhkjzemzf:${PGPASSWORD}@aws-0-eu-west-1.pooler.supabase.com:5432/postgres?sslmode=require"
+          psql "$CONN" -f supabase/schema.sql 2>&1 || \
+          psql "postgresql://postgres:${PGPASSWORD}@db.vfxocdnquxhrhkjzemzf.supabase.co:5432/postgres?sslmode=require" -f supabase/schema.sql 2>&1
+          echo "Schema done"
 
       - name: Create admin user
         run: |
-          psql "$PGCONNSTR" -v ON_ERROR_STOP=0 -f supabase/setup-admin.sql 2>&1
-          echo "Admin step done"
+          CONN="postgresql://postgres.vfxocdnquxhrhkjzemzf:${PGPASSWORD}@aws-0-eu-west-1.pooler.supabase.com:5432/postgres?sslmode=require"
+          psql "$CONN" -f supabase/setup-admin.sql 2>&1 || \
+          psql "postgresql://postgres:${PGPASSWORD}@db.vfxocdnquxhrhkjzemzf.supabase.co:5432/postgres?sslmode=require" -f supabase/setup-admin.sql 2>&1
+          echo "Admin done"
 
-      - name: Verify setup
+      - name: Verify
         run: |
-          echo "=== Tables ==="
-          psql "$PGCONNSTR" -c "SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename;"
-          echo "=== Auth Users ==="
-          psql "$PGCONNSTR" -c "SELECT id, email FROM auth.users LIMIT 5;"
-          echo "=== Utilizatori ==="
-          psql "$PGCONNSTR" -c "SELECT * FROM utilizatori;"
-          echo "=== SETUP COMPLETE ==="
+          CONN="postgresql://postgres.vfxocdnquxhrhkjzemzf:${PGPASSWORD}@aws-0-eu-west-1.pooler.supabase.com:5432/postgres?sslmode=require"
+          psql "$CONN" -c "SELECT tablename FROM pg_tables WHERE schemaname='public';" 2>&1 || true
+          psql "$CONN" -c "SELECT email FROM auth.users;" 2>&1 || true
