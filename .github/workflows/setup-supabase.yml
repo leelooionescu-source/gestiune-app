@@ -1,18 +1,14 @@
 name: Setup Supabase Database
 
 on:
-  workflow_dispatch:
-    inputs:
-      db_password:
-        description: 'Database password'
-        required: true
-        type: string
+  push:
+    paths: ['.github/workflows/setup-supabase.yml']
 
 jobs:
   setup:
     runs-on: ubuntu-latest
     env:
-      PGPASSWORD: ${{ inputs.db_password }}
+      PGPASSWORD: Wwxx7pQ2yo4c3FLO
       DB_HOST: db.vfxocdnquxhrhkjzemzf.supabase.co
     steps:
       - uses: actions/checkout@v4
