@@ -1,0 +1,38 @@
+name: Setup Supabase Database
+
+on:
+  workflow_dispatch:
+    inputs:
+      db_password:
+        description: 'Database password'
+        required: true
+        type: string
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    env:
+      PGPASSWORD: ${{ inputs.db_password }}
+      DB_HOST: db.vfxocdnquxhrhkjzemzf.supabase.co
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: claude/analyze-test-coverage-0UYsC
+
+      - name: Run database schema
+        run: |
+          psql "host=$DB_HOST port=5432 dbname=postgres user=postgres sslmode=require" -f supabase/schema.sql
+          echo "Schema created!"
+
+      - name: Create admin user
+        run: |
+          psql "host=$DB_HOST port=5432 dbname=postgres user=postgres sslmode=require" -f supabase/setup-admin.sql
+          echo "Admin user created!"
+
+      - name: Verify setup
+        run: |
+          echo "=== Tables ==="
+          psql "host=$DB_HOST port=5432 dbname=postgres user=postgres sslmode=require" -c "SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename;"
+          echo "=== Users ==="
+          psql "host=$DB_HOST port=5432 dbname=postgres user=postgres sslmode=require" -c "SELECT email FROM auth.users;"
+          echo "=== Setup complete! ==="
