@@ -1,0 +1,34 @@
+name: Setup Supabase Database
+
+on:
+  push:
+    branches: ['claude/analyze-test-coverage-0UYsC']
+    paths: ['.github/workflows/setup-supabase.yml']
+  workflow_dispatch:
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    env:
+      PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      DB_HOST: db.vfxocdnquxhrhkjzemzf.supabase.co
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: claude/analyze-test-coverage-0UYsC
+
+      - name: Run database schema
+        run: |
+          psql "host=$DB_HOST port=5432 dbname=postgres user=postgres sslmode=require" -f supabase/schema.sql
+          echo "Schema created!"
+
+      - name: Create admin user
+        run: |
+          psql "host=$DB_HOST port=5432 dbname=postgres user=postgres sslmode=require" -f supabase/setup-admin.sql
+          echo "Admin user created!"
+
+      - name: Verify setup
+        run: |
+          psql "host=$DB_HOST port=5432 dbname=postgres user=postgres sslmode=require" -c "SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename;"
+          psql "host=$DB_HOST port=5432 dbname=postgres user=postgres sslmode=require" -c "SELECT email FROM auth.users;"
+          echo "Setup complete!"
