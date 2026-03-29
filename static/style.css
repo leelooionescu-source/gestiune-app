@@ -1,0 +1,40 @@
+body {
+    background-color: #f8f9fa;
+}
+
+.card-stats {
+    transition: transform 0.2s;
+    border-left: 4px solid;
+}
+
+.card-stats:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.card-stats.clienti { border-left-color: #0d6efd; }
+.card-stats.contracte { border-left-color: #198754; }
+.card-stats.proiecte { border-left-color: #ffc107; }
+.card-stats.facturi { border-left-color: #dc3545; }
+
+.table th {
+    white-space: nowrap;
+}
+
+.btn-action {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+.login-container {
+    max-width: 400px;
+    margin: 100px auto;
+}
+
+.badge-activ { background-color: #198754; }
+.badge-finalizat { background-color: #6c757d; }
+.badge-anulat { background-color: #dc3545; }
+.badge-in-lucru { background-color: #ffc107; color: #000; }
+.badge-suspendat { background-color: #fd7e14; }
+.badge-emisa { background-color: #0dcaf0; color: #000; }
+.badge-incasata { background-color: #198754; }

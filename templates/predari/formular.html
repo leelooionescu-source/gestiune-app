@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editeaza Predare' if predare else 'Adauga Predare' }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <h4 class="mb-3">
+            <i class="bi bi-{{ 'pencil' if predare else 'plus-lg' }}"></i>
+            {{ 'Editeaza Predare' if predare else 'Adauga Predare Noua' }}
+        </h4>
+        <div class="card">
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="proiect_id" class="form-label">Proiect <span class="text-danger">*</span></label>
+                        <select class="form-select" id="proiect_id" name="proiect_id" required>
+                            <option value="">-- Selecteaza proiect --</option>
+                            {% for p in proiecte %}
+                            <option value="{{ p.id }}" {{ 'selected' if predare and predare.proiect_id == p.id }}>{{ p.nume }} ({{ p.numar_contract }} - {{ p.client_nume }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="data_predare" class="form-label">Data Predare <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" id="data_predare" name="data_predare" value="{{ predare.data_predare if predare else '' }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="descriere" class="form-label">Descriere Predare</label>
+                        <textarea class="form-control" id="descriere" name="descriere" rows="3">{{ predare.descriere if predare else '' }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="document_predare" class="form-label">Document Predare (referinta)</label>
+                        <input type="text" class="form-control" id="document_predare" name="document_predare" value="{{ predare.document_predare if predare else '' }}" placeholder="Ex: PV-001/2024">
+                    </div>
+                    <div class="mb-3">
+                        <label for="observatii" class="form-label">Observatii</label>
+                        <textarea class="form-control" id="observatii" name="observatii" rows="2">{{ predare.observatii if predare else '' }}</textarea>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg"></i> {{ 'Salveaza' if predare else 'Adauga' }}
+                        </button>
+                        <a href="{{ url_for('predari_lista') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Inapoi
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

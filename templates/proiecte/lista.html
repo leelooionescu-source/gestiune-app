@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Proiecte{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4><i class="bi bi-kanban"></i> Proiecte</h4>
+    <a href="{{ url_for('proiecte_adauga') }}" class="btn btn-primary">
+        <i class="bi bi-plus-lg"></i> Adauga Proiect
+    </a>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <form method="GET" class="row g-2 align-items-center">
+            <div class="col-auto flex-grow-1">
+                <input type="text" class="form-control form-control-sm" name="cautare" placeholder="Cauta dupa nume, descriere sau responsabil..." value="{{ cautare }}">
+            </div>
+            <div class="col-auto">
+                <select name="status" class="form-select form-select-sm">
+                    <option value="">Toate statusurile</option>
+                    <option value="In lucru" {{ 'selected' if status_filtru == 'In lucru' }}>In lucru</option>
+                    <option value="Finalizat" {{ 'selected' if status_filtru == 'Finalizat' }}>Finalizat</option>
+                    <option value="Suspendat" {{ 'selected' if status_filtru == 'Suspendat' }}>Suspendat</option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-sm btn-outline-primary"><i class="bi bi-search"></i> Cauta</button>
+            </div>
+            {% if cautare or status_filtru %}
+            <div class="col-auto">
+                <a href="{{ url_for('proiecte_lista') }}" class="btn btn-sm btn-outline-secondary">Resetare</a>
+            </div>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>#</th>
+                    <th>Nume Proiect</th>
+                    <th>Contract</th>
+                    <th>Client</th>
+                    <th>Responsabil</th>
+                    <th>Perioada</th>
+                    <th>Status</th>
+                    <th style="width: 130px;">Actiuni</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in proiecte %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td><strong>{{ p.nume }}</strong></td>
+                    <td>{{ p.numar_contract }}</td>
+                    <td>{{ p.client_nume }}</td>
+                    <td>{{ p.responsabil or '-' }}</td>
+                    <td>{{ p.data_start or '?' }} - {{ p.data_estimata_finalizare or '?' }}</td>
+                    <td>
+                        {% if p.status == 'In lucru' %}
+                        <span class="badge badge-in-lucru">In lucru</span>
+                        {% elif p.status == 'Finalizat' %}
+                        <span class="badge badge-finalizat">Finalizat</span>
+                        {% else %}
+                        <span class="badge badge-suspendat">Suspendat</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{{ url_for('proiecte_editeaza', id=p.id) }}" class="btn btn-sm btn-outline-primary btn-action" title="Editeaza">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <a href="{{ url_for('proiecte_sterge', id=p.id) }}" class="btn btn-sm btn-outline-danger btn-action" title="Sterge" onclick="return confirm('Sigur vrei sa stergi acest proiect?')">
+                            <i class="bi bi-trash"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="text-center text-muted py-4">
+                        {% if cautare or status_filtru %}
+                        Niciun proiect gasit.
+                        {% else %}
+                        Niciun proiect inregistrat. <a href="{{ url_for('proiecte_adauga') }}">Adauga primul proiect</a>.
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

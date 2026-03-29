@@ -1,0 +1,379 @@
+{% extends "base.html" %}
+{% block title %}Detalii {{ client.nume }}{% endblock %}
+{% block content %}
+
+<!-- Header client -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h4><i class="bi bi-person-lines-fill"></i> {{ client.nume }}</h4>
+        <span class="text-muted">
+            {% if client.telefon %}<i class="bi bi-telephone"></i> {{ client.telefon }} &nbsp;{% endif %}
+            {% if client.email %}<i class="bi bi-envelope"></i> {{ client.email }}{% endif %}
+        </span>
+    </div>
+    <div>
+        <a href="{{ url_for('clienti_editeaza', id=client.id) }}" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-pencil"></i> Editeaza Client
+        </a>
+        <a href="{{ url_for('clienti_lista') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i> Inapoi la lista
+        </a>
+    </div>
+</div>
+
+<!-- Totaluri servicii -->
+<div class="row mb-4">
+    <div class="col-md-3 col-sm-6 mb-2">
+        <div class="card card-stats clienti">
+            <div class="card-body py-2">
+                <small class="text-muted">Total Imobile</small>
+                <h4 class="mb-0">{{ totals.total_imobile }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6 mb-2">
+        <div class="card card-stats contracte">
+            <div class="card-body py-2">
+                <small class="text-muted">Valoare Totala</small>
+                <h4 class="mb-0">{{ "%.2f"|format(totals.total_valoare) }} RON</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6 mb-2">
+        <div class="card border-start border-4" style="border-color: #dc3545 !important;">
+            <div class="card-body py-2">
+                <small class="text-muted">De Incasat</small>
+                <h4 class="mb-0 text-danger">{{ "%.2f"|format(totals.valoare_neincasata) }} RON</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6 mb-2">
+        <div class="card">
+            <div class="card-body py-2">
+                <small class="text-muted">Statusuri Servicii</small>
+                <div>
+                    <span class="badge bg-success">{{ totals.predate or 0 }} predate</span>
+                    <span class="badge bg-warning text-dark">{{ totals.nepredate or 0 }} nepredate</span>
+                </div>
+                <div>
+                    <span class="badge bg-info text-dark">{{ totals.facturate or 0 }} facturate</span>
+                    <span class="badge bg-danger">{{ totals.neincasate or 0 }} neincasate</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Contracte -->
+{% for cd in contracte_data %}
+{% set c = cd.contract %}
+<div class="card mb-4">
+    <div class="card-header bg-primary bg-opacity-10 d-flex justify-content-between align-items-center">
+        <div>
+            <strong><i class="bi bi-file-earmark-text"></i> Contract {{ c.numar_contract }}</strong>
+            {% if c.status == 'Activ' %}
+            <span class="badge badge-activ ms-2">Activ</span>
+            {% elif c.status == 'Finalizat' %}
+            <span class="badge badge-finalizat ms-2">Finalizat</span>
+            {% else %}
+            <span class="badge badge-anulat ms-2">Anulat</span>
+            {% endif %}
+            {% if c.valoare %}
+            <span class="text-muted ms-2">| Valoare: {{ "%.2f"|format(c.valoare) }} RON</span>
+            {% endif %}
+            {% if c.data_inceput or c.data_sfarsit %}
+            <span class="text-muted ms-2">| {{ c.data_inceput or '?' }} - {{ c.data_sfarsit or '?' }}</span>
+            {% endif %}
+        </div>
+        <a href="{{ url_for('contracte_editeaza', id=c.id) }}" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-pencil"></i>
+        </a>
+    </div>
+    <div class="card-body">
+        {% if c.descriere %}
+        <p class="text-muted mb-3">{{ c.descriere }}</p>
+        {% endif %}
+
+        <!-- HG-uri -->
+        <div class="mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="mb-0"><i class="bi bi-journal-text"></i> HG-uri</h6>
+                <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#modalHG{{ c.id }}">
+                    <i class="bi bi-plus"></i> Adauga HG
+                </button>
+            </div>
+            {% if cd.hg_uri %}
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered mb-0">
+                    <thead class="table-light">
+                        <tr><th>Numar HG</th><th>Descriere</th><th style="width:60px;"></th></tr>
+                    </thead>
+                    <tbody>
+                        {% for hg in cd.hg_uri %}
+                        <tr>
+                            <td><strong>{{ hg.numar_hg }}</strong></td>
+                            <td>{{ hg.descriere or '-' }}</td>
+                            <td>
+                                <a href="{{ url_for('hg_sterge', id=hg.id) }}" class="btn btn-sm btn-outline-danger btn-action" onclick="return confirm('Stergi HG-ul?')">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted small mb-0">Niciun HG adaugat.</p>
+            {% endif %}
+        </div>
+
+        <!-- Servicii -->
+        <div>
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="mb-0"><i class="bi bi-gear"></i> Servicii Prestate</h6>
+                <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#modalServiciu{{ c.id }}">
+                    <i class="bi bi-plus"></i> Adauga Serviciu
+                </button>
+            </div>
+            {% if cd.servicii %}
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Descriere Serviciu</th>
+                            <th class="text-center">Nr. Imobile</th>
+                            <th class="text-end">Pret/Imobil</th>
+                            <th class="text-end">Valoare</th>
+                            <th class="text-center">Predare</th>
+                            <th class="text-center">Facturare</th>
+                            <th class="text-center">Incasare</th>
+                            <th style="width:90px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in cd.servicii %}
+                        <tr>
+                            <td>{{ s.descriere_serviciu }}</td>
+                            <td class="text-center">{{ s.numar_imobile }}</td>
+                            <td class="text-end">{{ "%.2f"|format(s.pret_per_imobil) }}</td>
+                            <td class="text-end"><strong>{{ "%.2f"|format(s.valoare_totala) }}</strong></td>
+                            <td class="text-center">
+                                {% if s.status_predare == 'Predat' %}
+                                <span class="badge bg-success">Predat</span>
+                                {% else %}
+                                <span class="badge bg-warning text-dark">Nepredat</span>
+                                {% endif %}
+                                {% if s.data_predare %}<br><small>{{ s.data_predare }}</small>{% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if s.status_facturare == 'Facturat' %}
+                                <span class="badge bg-info text-dark">Facturat</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Nefacturat</span>
+                                {% endif %}
+                                {% if s.numar_factura %}<br><small>{{ s.numar_factura }}</small>{% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if s.status_incasare == 'Incasat' %}
+                                <span class="badge bg-success">Incasat</span>
+                                {% else %}
+                                <span class="badge bg-danger">Neincasat</span>
+                                {% endif %}
+                                {% if s.data_incasare %}<br><small>{{ s.data_incasare }}</small>{% endif %}
+                            </td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-outline-primary btn-action" data-bs-toggle="modal" data-bs-target="#modalEditServiciu{{ s.id }}" title="Editeaza">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <a href="{{ url_for('servicii_sterge', id=s.id) }}" class="btn btn-sm btn-outline-danger btn-action" onclick="return confirm('Stergi serviciul?')" title="Sterge">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="table-light">
+                        <tr>
+                            <td><strong>TOTAL</strong></td>
+                            <td class="text-center"><strong>{{ cd.servicii|sum(attribute='numar_imobile') }}</strong></td>
+                            <td></td>
+                            <td class="text-end"><strong>{{ "%.2f"|format(cd.servicii|sum(attribute='valoare_totala')) }} RON</strong></td>
+                            <td colspan="4"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted small mb-0">Niciun serviciu adaugat.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal Adauga HG -->
+<div class="modal fade" id="modalHG{{ c.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('hg_adauga') }}">
+                <input type="hidden" name="contract_id" value="{{ c.id }}">
+                <input type="hidden" name="client_id" value="{{ client.id }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">Adauga HG la Contract {{ c.numar_contract }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Numar HG <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="numar_hg" placeholder="Ex: HG 1409/2024" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Descriere</label>
+                        <input type="text" class="form-control" name="descriere" placeholder="Descriere optionala">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuleaza</button>
+                    <button type="submit" class="btn btn-primary">Adauga</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Adauga Serviciu -->
+<div class="modal fade" id="modalServiciu{{ c.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('servicii_adauga') }}">
+                <input type="hidden" name="contract_id" value="{{ c.id }}">
+                <input type="hidden" name="client_id" value="{{ client.id }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">Adauga Serviciu la Contract {{ c.numar_contract }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Descriere Serviciu <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="descriere_serviciu" placeholder="Ex: Documentatii cadastrale expropriere" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Numar Imobile</label>
+                            <input type="number" class="form-control" name="numar_imobile" value="0" min="0">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Pret per Imobil (RON)</label>
+                            <input type="number" step="0.01" class="form-control" name="pret_per_imobil" value="0" min="0">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuleaza</button>
+                    <button type="submit" class="btn btn-primary">Adauga</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modale Editare Servicii -->
+{% for s in cd.servicii %}
+<div class="modal fade" id="modalEditServiciu{{ s.id }}" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('servicii_editeaza', id=s.id) }}">
+                <input type="hidden" name="client_id" value="{{ client.id }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">Editeaza Serviciu</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Descriere Serviciu</label>
+                        <input type="text" class="form-control" name="descriere_serviciu" value="{{ s.descriere_serviciu }}">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Nr. Imobile</label>
+                            <input type="number" class="form-control" name="numar_imobile" value="{{ s.numar_imobile }}" min="0">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Pret/Imobil (RON)</label>
+                            <input type="number" step="0.01" class="form-control" name="pret_per_imobil" value="{{ s.pret_per_imobil }}" min="0">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Observatii</label>
+                            <input type="text" class="form-control" name="observatii" value="{{ s.observatii or '' }}">
+                        </div>
+                    </div>
+                    <hr>
+                    <h6>Status Predare</h6>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" name="status_predare">
+                                <option value="Nepredat" {{ 'selected' if s.status_predare == 'Nepredat' }}>Nepredat</option>
+                                <option value="Predat" {{ 'selected' if s.status_predare == 'Predat' }}>Predat</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Data Predare</label>
+                            <input type="date" class="form-control" name="data_predare" value="{{ s.data_predare or '' }}">
+                        </div>
+                    </div>
+                    <hr>
+                    <h6>Status Facturare</h6>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" name="status_facturare">
+                                <option value="Nefacturat" {{ 'selected' if s.status_facturare == 'Nefacturat' }}>Nefacturat</option>
+                                <option value="Facturat" {{ 'selected' if s.status_facturare == 'Facturat' }}>Facturat</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Nr. Factura</label>
+                            <input type="text" class="form-control" name="numar_factura" value="{{ s.numar_factura or '' }}">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Data Factura</label>
+                            <input type="date" class="form-control" name="data_factura" value="{{ s.data_factura or '' }}">
+                        </div>
+                    </div>
+                    <hr>
+                    <h6>Status Incasare</h6>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" name="status_incasare">
+                                <option value="Neincasat" {{ 'selected' if s.status_incasare == 'Neincasat' }}>Neincasat</option>
+                                <option value="Incasat" {{ 'selected' if s.status_incasare == 'Incasat' }}>Incasat</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Data Incasare</label>
+                            <input type="date" class="form-control" name="data_incasare" value="{{ s.data_incasare or '' }}">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuleaza</button>
+                    <button type="submit" class="btn btn-primary">Salveaza</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+{% endfor %}
+
+{% if not contracte_data %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i> Acest client nu are contracte.
+    <a href="{{ url_for('contracte_adauga') }}">Adauga un contract</a>.
+</div>
+{% endif %}
+
+{% endblock %}

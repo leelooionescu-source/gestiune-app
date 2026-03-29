@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Facturi{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4><i class="bi bi-receipt"></i> Facturi</h4>
+    <a href="{{ url_for('facturi_adauga') }}" class="btn btn-primary">
+        <i class="bi bi-plus-lg"></i> Adauga Factura
+    </a>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <form method="GET" class="row g-2 align-items-center">
+            <div class="col-auto flex-grow-1">
+                <input type="text" class="form-control form-control-sm" name="cautare" placeholder="Cauta dupa numar factura, contract sau client..." value="{{ cautare }}">
+            </div>
+            <div class="col-auto">
+                <select name="status" class="form-select form-select-sm">
+                    <option value="">Toate statusurile</option>
+                    <option value="Emisa" {{ 'selected' if status_filtru == 'Emisa' }}>Emisa</option>
+                    <option value="Incasata" {{ 'selected' if status_filtru == 'Incasata' }}>Incasata</option>
+                    <option value="Anulata" {{ 'selected' if status_filtru == 'Anulata' }}>Anulata</option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-sm btn-outline-primary"><i class="bi bi-search"></i> Cauta</button>
+            </div>
+            {% if cautare or status_filtru %}
+            <div class="col-auto">
+                <a href="{{ url_for('facturi_lista') }}" class="btn btn-sm btn-outline-secondary">Resetare</a>
+            </div>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+{% if total_neincasat > 0 %}
+<div class="alert alert-info py-2 mb-3">
+    <i class="bi bi-info-circle"></i> Total facturi neincasate: <strong>{{ "%.2f"|format(total_neincasat) }} RON</strong>
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>#</th>
+                    <th>Nr. Factura</th>
+                    <th>Contract</th>
+                    <th>Client</th>
+                    <th>Valoare</th>
+                    <th>Data Emitere</th>
+                    <th>Data Scadenta</th>
+                    <th>Status</th>
+                    <th style="width: 130px;">Actiuni</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for f in facturi %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td><strong>{{ f.numar_factura }}</strong></td>
+                    <td>{{ f.numar_contract }}</td>
+                    <td>{{ f.client_nume }}</td>
+                    <td>{{ "%.2f"|format(f.valoare) }} RON</td>
+                    <td>{{ f.data_emitere }}</td>
+                    <td>{{ f.data_scadenta or '-' }}</td>
+                    <td>
+                        {% if f.status == 'Emisa' %}
+                        <span class="badge badge-emisa">Emisa</span>
+                        {% elif f.status == 'Incasata' %}
+                        <span class="badge badge-incasata">Incasata</span>
+                        {% else %}
+                        <span class="badge badge-anulat">Anulata</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{{ url_for('facturi_editeaza', id=f.id) }}" class="btn btn-sm btn-outline-primary btn-action" title="Editeaza">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <a href="{{ url_for('facturi_sterge', id=f.id) }}" class="btn btn-sm btn-outline-danger btn-action" title="Sterge" onclick="return confirm('Sigur vrei sa stergi aceasta factura?')">
+                            <i class="bi bi-trash"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9" class="text-center text-muted py-4">
+                        {% if cautare or status_filtru %}
+                        Nicio factura gasita.
+                        {% else %}
+                        Nicio factura inregistrata. <a href="{{ url_for('facturi_adauga') }}">Adauga prima factura</a>.
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editeaza Proiect' if proiect else 'Adauga Proiect' }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <h4 class="mb-3">
+            <i class="bi bi-{{ 'pencil' if proiect else 'plus-lg' }}"></i>
+            {{ 'Editeaza Proiect' if proiect else 'Adauga Proiect Nou' }}
+        </h4>
+        <div class="card">
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="nume" class="form-label">Nume Proiect <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="nume" name="nume" value="{{ proiect.nume if proiect else '' }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="contract_id" class="form-label">Contract <span class="text-danger">*</span></label>
+                        <select class="form-select" id="contract_id" name="contract_id" required>
+                            <option value="">-- Selecteaza contract --</option>
+                            {% for c in contracte %}
+                            <option value="{{ c.id }}" {{ 'selected' if proiect and proiect.contract_id == c.id }}>{{ c.numar_contract }} ({{ c.client_nume }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="descriere" class="form-label">Descriere</label>
+                        <textarea class="form-control" id="descriere" name="descriere" rows="3">{{ proiect.descriere if proiect else '' }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="responsabil" class="form-label">Responsabil</label>
+                        <input type="text" class="form-control" id="responsabil" name="responsabil" value="{{ proiect.responsabil if proiect else '' }}">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="data_start" class="form-label">Data Start</label>
+                            <input type="date" class="form-control" id="data_start" name="data_start" value="{{ proiect.data_start if proiect else '' }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="data_estimata_finalizare" class="form-label">Data Estimata Finalizare</label>
+                            <input type="date" class="form-control" id="data_estimata_finalizare" name="data_estimata_finalizare" value="{{ proiect.data_estimata_finalizare if proiect else '' }}">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Status</label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="In lucru" {{ 'selected' if not proiect or proiect.status == 'In lucru' }}>In lucru</option>
+                            <option value="Finalizat" {{ 'selected' if proiect and proiect.status == 'Finalizat' }}>Finalizat</option>
+                            <option value="Suspendat" {{ 'selected' if proiect and proiect.status == 'Suspendat' }}>Suspendat</option>
+                        </select>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg"></i> {{ 'Salveaza' if proiect else 'Adauga' }}
+                        </button>
+                        <a href="{{ url_for('proiecte_lista') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Inapoi
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

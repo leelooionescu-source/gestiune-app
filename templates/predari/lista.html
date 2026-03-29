@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Predari{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4><i class="bi bi-check2-square"></i> Predari</h4>
+    <a href="{{ url_for('predari_adauga') }}" class="btn btn-primary">
+        <i class="bi bi-plus-lg"></i> Adauga Predare
+    </a>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <form method="GET" class="row g-2 align-items-center">
+            <div class="col-auto flex-grow-1">
+                <input type="text" class="form-control form-control-sm" name="cautare" placeholder="Cauta dupa descriere, proiect sau client..." value="{{ cautare }}">
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-sm btn-outline-primary"><i class="bi bi-search"></i> Cauta</button>
+            </div>
+            {% if cautare %}
+            <div class="col-auto">
+                <a href="{{ url_for('predari_lista') }}" class="btn btn-sm btn-outline-secondary">Resetare</a>
+            </div>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>#</th>
+                    <th>Data Predare</th>
+                    <th>Proiect</th>
+                    <th>Contract</th>
+                    <th>Client</th>
+                    <th>Descriere</th>
+                    <th>Observatii</th>
+                    <th style="width: 130px;">Actiuni</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pr in predari %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td><strong>{{ pr.data_predare }}</strong></td>
+                    <td>{{ pr.proiect_nume }}</td>
+                    <td>{{ pr.numar_contract }}</td>
+                    <td>{{ pr.client_nume }}</td>
+                    <td>{{ pr.descriere[:40] ~ '...' if pr.descriere and pr.descriere|length > 40 else (pr.descriere or '-') }}</td>
+                    <td>{{ pr.observatii[:30] ~ '...' if pr.observatii and pr.observatii|length > 30 else (pr.observatii or '-') }}</td>
+                    <td>
+                        <a href="{{ url_for('predari_editeaza', id=pr.id) }}" class="btn btn-sm btn-outline-primary btn-action" title="Editeaza">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <a href="{{ url_for('predari_sterge', id=pr.id) }}" class="btn btn-sm btn-outline-danger btn-action" title="Sterge" onclick="return confirm('Sigur vrei sa stergi aceasta predare?')">
+                            <i class="bi bi-trash"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="text-center text-muted py-4">
+                        {% if cautare %}
+                        Nicio predare gasita.
+                        {% else %}
+                        Nicio predare inregistrata. <a href="{{ url_for('predari_adauga') }}">Adauga prima predare</a>.
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

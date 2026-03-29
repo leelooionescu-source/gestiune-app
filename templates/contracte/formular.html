@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editeaza Contract' if contract else 'Adauga Contract' }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <h4 class="mb-3">
+            <i class="bi bi-{{ 'pencil' if contract else 'plus-lg' }}"></i>
+            {{ 'Editeaza Contract' if contract else 'Adauga Contract Nou' }}
+        </h4>
+        <div class="card">
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="numar_contract" class="form-label">Numar Contract <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="numar_contract" name="numar_contract" value="{{ contract.numar_contract if contract else '' }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="client_id" class="form-label">Client <span class="text-danger">*</span></label>
+                        <select class="form-select" id="client_id" name="client_id" required>
+                            <option value="">-- Selecteaza client --</option>
+                            {% for cl in clienti %}
+                            <option value="{{ cl.id }}" {{ 'selected' if contract and contract.client_id == cl.id }}>{{ cl.nume }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="descriere" class="form-label">Descriere</label>
+                        <textarea class="form-control" id="descriere" name="descriere" rows="3">{{ contract.descriere if contract else '' }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="valoare" class="form-label">Valoare (RON)</label>
+                        <input type="number" step="0.01" class="form-control" id="valoare" name="valoare" value="{{ contract.valoare if contract and contract.valoare else '' }}">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="data_inceput" class="form-label">Data Inceput</label>
+                            <input type="date" class="form-control" id="data_inceput" name="data_inceput" value="{{ contract.data_inceput if contract else '' }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="data_sfarsit" class="form-label">Data Sfarsit</label>
+                            <input type="date" class="form-control" id="data_sfarsit" name="data_sfarsit" value="{{ contract.data_sfarsit if contract else '' }}">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Status</label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="Activ" {{ 'selected' if not contract or contract.status == 'Activ' }}>Activ</option>
+                            <option value="Finalizat" {{ 'selected' if contract and contract.status == 'Finalizat' }}>Finalizat</option>
+                            <option value="Anulat" {{ 'selected' if contract and contract.status == 'Anulat' }}>Anulat</option>
+                        </select>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg"></i> {{ 'Salveaza' if contract else 'Adauga' }}
+                        </button>
+                        <a href="{{ url_for('contracte_lista') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Inapoi
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

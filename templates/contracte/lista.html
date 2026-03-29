@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Contracte{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4><i class="bi bi-file-earmark-text"></i> Contracte</h4>
+    <a href="{{ url_for('contracte_adauga') }}" class="btn btn-primary">
+        <i class="bi bi-plus-lg"></i> Adauga Contract
+    </a>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <form method="GET" class="row g-2 align-items-center">
+            <div class="col-auto flex-grow-1">
+                <input type="text" class="form-control form-control-sm" name="cautare" placeholder="Cauta dupa numar, descriere sau client..." value="{{ cautare }}">
+            </div>
+            <div class="col-auto">
+                <select name="status" class="form-select form-select-sm">
+                    <option value="">Toate statusurile</option>
+                    <option value="Activ" {{ 'selected' if status_filtru == 'Activ' }}>Activ</option>
+                    <option value="Finalizat" {{ 'selected' if status_filtru == 'Finalizat' }}>Finalizat</option>
+                    <option value="Anulat" {{ 'selected' if status_filtru == 'Anulat' }}>Anulat</option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-sm btn-outline-primary"><i class="bi bi-search"></i> Cauta</button>
+            </div>
+            {% if cautare or status_filtru %}
+            <div class="col-auto">
+                <a href="{{ url_for('contracte_lista') }}" class="btn btn-sm btn-outline-secondary">Resetare</a>
+            </div>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>#</th>
+                    <th>Nr. Contract</th>
+                    <th>Client</th>
+                    <th>Descriere</th>
+                    <th>Valoare</th>
+                    <th>Perioada</th>
+                    <th>Status</th>
+                    <th style="width: 130px;">Actiuni</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in contracte %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td><strong>{{ c.numar_contract }}</strong></td>
+                    <td>{{ c.client_nume }}</td>
+                    <td>{{ c.descriere[:40] ~ '...' if c.descriere and c.descriere|length > 40 else (c.descriere or '-') }}</td>
+                    <td>{{ "%.2f"|format(c.valoare) ~ ' RON' if c.valoare else '-' }}</td>
+                    <td>{{ c.data_inceput or '?' }} - {{ c.data_sfarsit or '?' }}</td>
+                    <td>
+                        {% if c.status == 'Activ' %}
+                        <span class="badge badge-activ">Activ</span>
+                        {% elif c.status == 'Finalizat' %}
+                        <span class="badge badge-finalizat">Finalizat</span>
+                        {% else %}
+                        <span class="badge badge-anulat">Anulat</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{{ url_for('contracte_editeaza', id=c.id) }}" class="btn btn-sm btn-outline-primary btn-action" title="Editeaza">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <a href="{{ url_for('contracte_sterge', id=c.id) }}" class="btn btn-sm btn-outline-danger btn-action" title="Sterge" onclick="return confirm('Sigur vrei sa stergi acest contract?')">
+                            <i class="bi bi-trash"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="text-center text-muted py-4">
+                        {% if cautare or status_filtru %}
+                        Niciun contract gasit.
+                        {% else %}
+                        Niciun contract inregistrat. <a href="{{ url_for('contracte_adauga') }}">Adauga primul contract</a>.
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

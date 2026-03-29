@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+{% block title %}Panou Principal{% endblock %}
+{% block content %}
+<h4 class="mb-4"><i class="bi bi-speedometer2"></i> Panou Principal</h4>
+
+<div class="row mb-4">
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="card card-stats clienti">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1">Clienti</h6>
+                        <h3 class="mb-0">{{ stats.clienti }}</h3>
+                    </div>
+                    <i class="bi bi-people text-primary" style="font-size: 2rem;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="card card-stats contracte">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1">Contracte Active</h6>
+                        <h3 class="mb-0">{{ stats.contracte_active }}</h3>
+                    </div>
+                    <i class="bi bi-file-earmark-text text-success" style="font-size: 2rem;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="card card-stats proiecte">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1">Proiecte In Lucru</h6>
+                        <h3 class="mb-0">{{ stats.proiecte_in_lucru }}</h3>
+                    </div>
+                    <i class="bi bi-kanban text-warning" style="font-size: 2rem;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="card card-stats facturi">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1">Facturi Neincasate</h6>
+                        <h3 class="mb-0">{{ stats.facturi_neincasate }}</h3>
+                        <small class="text-muted">{{ "%.2f"|format(stats.valoare_neincasata) }} RON</small>
+                    </div>
+                    <i class="bi bi-receipt text-danger" style="font-size: 2rem;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Servicii stats row -->
+<div class="row mb-4">
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="card border-start border-4" style="border-color: #fd7e14 !important;">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1">Servicii Nepredate</h6>
+                        <h3 class="mb-0">{{ stats.servicii_nepredate }}</h3>
+                    </div>
+                    <i class="bi bi-clock-history text-warning" style="font-size: 2rem;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="card border-start border-4" style="border-color: #6c757d !important;">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1">Servicii Nefacturate</h6>
+                        <h3 class="mb-0">{{ stats.servicii_nefacturate }}</h3>
+                    </div>
+                    <i class="bi bi-receipt-cutoff text-secondary" style="font-size: 2rem;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="card border-start border-4" style="border-color: #dc3545 !important;">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1">Servicii Neincasate</h6>
+                        <h3 class="mb-0">{{ stats.servicii_neincasate }}</h3>
+                        <small class="text-muted">{{ "%.2f"|format(stats.valoare_servicii_neincasate) }} RON</small>
+                    </div>
+                    <i class="bi bi-cash-coin text-danger" style="font-size: 2rem;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="card border-start border-4" style="border-color: #198754 !important;">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1">Proiecte In Lucru</h6>
+                        <h3 class="mb-0">{{ stats.proiecte_in_lucru }}</h3>
+                    </div>
+                    <i class="bi bi-kanban text-success" style="font-size: 2rem;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-warning bg-opacity-10">
+                <i class="bi bi-exclamation-triangle"></i> Contracte care expira in 30 zile
+            </div>
+            <div class="card-body">
+                {% if contracte_expira %}
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead>
+                            <tr><th>Nr. Contract</th><th>Client</th><th>Expira la</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for c in contracte_expira %}
+                            <tr>
+                                <td>{{ c.numar_contract }}</td>
+                                <td>{{ c.client_nume }}</td>
+                                <td>{{ c.data_sfarsit }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted mb-0">Niciun contract nu expira in urmatoarele 30 de zile.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-info bg-opacity-10">
+                <i class="bi bi-receipt"></i> Ultimele facturi
+            </div>
+            <div class="card-body">
+                {% if ultimele_facturi %}
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead>
+                            <tr><th>Nr. Factura</th><th>Contract</th><th>Valoare</th><th>Status</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for f in ultimele_facturi %}
+                            <tr>
+                                <td>{{ f.numar_factura }}</td>
+                                <td>{{ f.numar_contract }}</td>
+                                <td>{{ "%.2f"|format(f.valoare) }} RON</td>
+                                <td>
+                                    {% if f.status == 'Emisa' %}
+                                    <span class="badge badge-emisa">Emisa</span>
+                                    {% elif f.status == 'Incasata' %}
+                                    <span class="badge badge-incasata">Incasata</span>
+                                    {% else %}
+                                    <span class="badge badge-anulat">Anulata</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted mb-0">Nicio factura inregistrata.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

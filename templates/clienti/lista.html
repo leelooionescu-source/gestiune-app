@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Clienti{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4><i class="bi bi-people"></i> Clienti</h4>
+    <a href="{{ url_for('clienti_adauga') }}" class="btn btn-primary">
+        <i class="bi bi-plus-lg"></i> Adauga Client
+    </a>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <form method="GET" class="row g-2 align-items-center">
+            <div class="col-auto flex-grow-1">
+                <input type="text" class="form-control form-control-sm" name="cautare" placeholder="Cauta dupa nume, telefon sau email..." value="{{ cautare }}">
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-sm btn-outline-primary"><i class="bi bi-search"></i> Cauta</button>
+            </div>
+            {% if cautare %}
+            <div class="col-auto">
+                <a href="{{ url_for('clienti_lista') }}" class="btn btn-sm btn-outline-secondary">Resetare</a>
+            </div>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>#</th>
+                    <th>Nume</th>
+                    <th>Telefon</th>
+                    <th>Email</th>
+                    <th>Notite</th>
+                    <th style="width: 170px;">Actiuni</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for client in clienti %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td><strong>{{ client.nume }}</strong></td>
+                    <td>{{ client.telefon or '-' }}</td>
+                    <td>{{ client.email or '-' }}</td>
+                    <td>{{ client.notite[:50] ~ '...' if client.notite and client.notite|length > 50 else (client.notite or '-') }}</td>
+                    <td>
+                        <a href="{{ url_for('clienti_detalii', id=client.id) }}" class="btn btn-sm btn-outline-success btn-action" title="Detalii & Servicii">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                        <a href="{{ url_for('clienti_editeaza', id=client.id) }}" class="btn btn-sm btn-outline-primary btn-action" title="Editeaza">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <a href="{{ url_for('clienti_sterge', id=client.id) }}" class="btn btn-sm btn-outline-danger btn-action" title="Sterge" onclick="return confirm('Sigur vrei sa stergi acest client?')">
+                            <i class="bi bi-trash"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">
+                        {% if cautare %}
+                        Niciun client gasit pentru "{{ cautare }}".
+                        {% else %}
+                        Niciun client inregistrat. <a href="{{ url_for('clienti_adauga') }}">Adauga primul client</a>.
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

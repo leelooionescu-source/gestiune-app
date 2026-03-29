@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editeaza Factura' if factura else 'Adauga Factura' }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <h4 class="mb-3">
+            <i class="bi bi-{{ 'pencil' if factura else 'plus-lg' }}"></i>
+            {{ 'Editeaza Factura' if factura else 'Adauga Factura Noua' }}
+        </h4>
+        <div class="card">
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="numar_factura" class="form-label">Numar Factura <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="numar_factura" name="numar_factura" value="{{ factura.numar_factura if factura else '' }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="contract_id" class="form-label">Contract <span class="text-danger">*</span></label>
+                        <select class="form-select" id="contract_id" name="contract_id" required>
+                            <option value="">-- Selecteaza contract --</option>
+                            {% for c in contracte %}
+                            <option value="{{ c.id }}" {{ 'selected' if factura and factura.contract_id == c.id }}>{{ c.numar_contract }} ({{ c.client_nume }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="valoare" class="form-label">Valoare (RON) <span class="text-danger">*</span></label>
+                        <input type="number" step="0.01" class="form-control" id="valoare" name="valoare" value="{{ factura.valoare if factura else '' }}" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="data_emitere" class="form-label">Data Emitere <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="data_emitere" name="data_emitere" value="{{ factura.data_emitere if factura else '' }}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="data_scadenta" class="form-label">Data Scadenta</label>
+                            <input type="date" class="form-control" id="data_scadenta" name="data_scadenta" value="{{ factura.data_scadenta if factura else '' }}">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Status</label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="Emisa" {{ 'selected' if not factura or factura.status == 'Emisa' }}>Emisa</option>
+                            <option value="Incasata" {{ 'selected' if factura and factura.status == 'Incasata' }}>Incasata</option>
+                            <option value="Anulata" {{ 'selected' if factura and factura.status == 'Anulata' }}>Anulata</option>
+                        </select>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg"></i> {{ 'Salveaza' if factura else 'Adauga' }}
+                        </button>
+                        <a href="{{ url_for('facturi_lista') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Inapoi
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

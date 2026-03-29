@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editeaza Client' if client else 'Adauga Client' }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <h4 class="mb-3">
+            <i class="bi bi-{{ 'pencil' if client else 'plus-lg' }}"></i>
+            {{ 'Editeaza Client' if client else 'Adauga Client Nou' }}
+        </h4>
+        <div class="card">
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="nume" class="form-label">Nume <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="nume" name="nume" value="{{ client.nume if client else '' }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="telefon" class="form-label">Telefon</label>
+                        <input type="text" class="form-control" id="telefon" name="telefon" value="{{ client.telefon if client else '' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" value="{{ client.email if client else '' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="notite" class="form-label">Notite</label>
+                        <textarea class="form-control" id="notite" name="notite" rows="3">{{ client.notite if client else '' }}</textarea>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg"></i> {{ 'Salveaza' if client else 'Adauga' }}
+                        </button>
+                        <a href="{{ url_for('clienti_lista') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Inapoi
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
