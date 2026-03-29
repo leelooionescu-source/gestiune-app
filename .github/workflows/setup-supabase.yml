@@ -13,52 +13,70 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: claude/analyze-test-coverage-0UYsC
+          ref: master
+          token: ${{ github.token }}
 
       - name: Install PostgreSQL client
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq postgresql-client
 
-      - name: Find working connection
-        id: conn
+      - name: Run diagnostics and save to file
         run: |
-          CONN1="postgresql://postgres.${PROJECT_REF}:${PGPASSWORD}@aws-0-eu-west-1.pooler.supabase.com:5432/postgres?sslmode=require"
-          CONN2="postgresql://postgres:${PGPASSWORD}@db.${PROJECT_REF}.supabase.co:5432/postgres?sslmode=require"
-          CONN3="postgresql://postgres.${PROJECT_REF}:${PGPASSWORD}@aws-0-eu-west-1.pooler.supabase.com:6543/postgres?sslmode=require"
+          exec > diagnostics.log 2>&1
+          echo "=== TIMESTAMP ==="
+          date
+          echo ""
 
-          if psql "$CONN1" -c "SELECT 1;" > /dev/null 2>&1; then
-            echo "conn=$CONN1" >> $GITHUB_OUTPUT
-            echo "Connected via session pooler"
-          elif psql "$CONN2" -c "SELECT 1;" > /dev/null 2>&1; then
-            echo "conn=$CONN2" >> $GITHUB_OUTPUT
-            echo "Connected via direct"
-          elif psql "$CONN3" -c "SELECT 1;" > /dev/null 2>&1; then
-            echo "conn=$CONN3" >> $GITHUB_OUTPUT
-            echo "Connected via transaction pooler"
-          else
-            echo "ALL CONNECTIONS FAILED"
-            psql "$CONN1" -c "SELECT 1;" 2>&1 || true
-            psql "$CONN2" -c "SELECT 1;" 2>&1 || true
-            exit 1
-          fi
+          echo "=== PSQL VERSION ==="
+          psql --version
+          echo ""
 
-      - name: Run database schema
+          echo "=== REST API CHECK ==="
+          curl -s -w "\nHTTP_CODE: %{http_code}\n" "https://${PROJECT_REF}.supabase.co/rest/v1/" -H "apikey: sb_publishable_8fp4YVXfwVoZnxjMH59vnw_nyKAPlkP" || echo "CURL FAILED"
+          echo ""
+
+          echo "=== DNS DIRECT ==="
+          dig +short db.${PROJECT_REF}.supabase.co 2>&1 || nslookup db.${PROJECT_REF}.supabase.co 2>&1 || echo "DNS FAILED"
+          echo ""
+
+          echo "=== DNS POOLER ==="
+          dig +short aws-0-eu-west-1.pooler.supabase.com 2>&1 || echo "DNS FAILED"
+          echo ""
+
+          echo "=== CONNECTION 1: Session pooler eu-west-1 port 5432 ==="
+          psql "postgresql://postgres.${PROJECT_REF}:${PGPASSWORD}@aws-0-eu-west-1.pooler.supabase.com:5432/postgres?sslmode=require" -c "SELECT 1 as test;" 2>&1 || echo "CONN1 FAILED"
+          echo ""
+
+          echo "=== CONNECTION 2: Direct port 5432 ==="
+          psql "postgresql://postgres:${PGPASSWORD}@db.${PROJECT_REF}.supabase.co:5432/postgres?sslmode=require" -c "SELECT 1 as test;" 2>&1 || echo "CONN2 FAILED"
+          echo ""
+
+          echo "=== CONNECTION 3: Transaction pooler port 6543 ==="
+          psql "postgresql://postgres.${PROJECT_REF}:${PGPASSWORD}@aws-0-eu-west-1.pooler.supabase.com:6543/postgres?sslmode=require" -c "SELECT 1 as test;" 2>&1 || echo "CONN3 FAILED"
+          echo ""
+
+          echo "=== CONNECTION 4: eu-central-1 pooler ==="
+          psql "postgresql://postgres.${PROJECT_REF}:${PGPASSWORD}@aws-0-eu-central-1.pooler.supabase.com:5432/postgres?sslmode=require" -c "SELECT 1 as test;" 2>&1 || echo "CONN4 FAILED"
+          echo ""
+
+          echo "=== CONNECTION 5: Direct no SSL ==="
+          psql "postgresql://postgres:${PGPASSWORD}@db.${PROJECT_REF}.supabase.co:5432/postgres" -c "SELECT 1 as test;" 2>&1 || echo "CONN5 FAILED"
+          echo ""
+
+          echo "=== PG_ISREADY ==="
+          pg_isready -h db.${PROJECT_REF}.supabase.co -p 5432 2>&1 || echo "NOT READY"
+          pg_isready -h aws-0-eu-west-1.pooler.supabase.com -p 5432 2>&1 || echo "NOT READY"
+          echo ""
+          echo "=== DONE ==="
+
+      - name: Show log
+        run: cat diagnostics.log
+
+      - name: Commit diagnostics
         run: |
-          psql "${{ steps.conn.outputs.conn }}" -f supabase/schema.sql
-          echo "SCHEMA CREATED"
-
-      - name: Create admin user
-        run: |
-          psql "${{ steps.conn.outputs.conn }}" -f supabase/setup-admin.sql
-          echo "ADMIN CREATED"
-
-      - name: Verify setup
-        run: |
-          echo "=== Tables ==="
-          psql "${{ steps.conn.outputs.conn }}" -c "SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename;"
-          echo "=== Auth Users ==="
-          psql "${{ steps.conn.outputs.conn }}" -c "SELECT id, email FROM auth.users LIMIT 5;"
-          echo "=== Utilizatori ==="
-          psql "${{ steps.conn.outputs.conn }}" -c "SELECT id, username, nume, is_admin FROM utilizatori;"
-          echo "=== ALL DONE ==="
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add diagnostics.log
+          git commit -m "Add connection diagnostics log" || true
+          git push origin master || true
