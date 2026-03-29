@@ -9,52 +9,53 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PGPASSWORD: Wwxx7pQ2yo4c3FLO
+      PROJECT_REF: vfxocdnquxhrhkjzemzf
     steps:
       - uses: actions/checkout@v4
         with:
           ref: claude/analyze-test-coverage-0UYsC
 
-      - name: Install PostgreSQL client
+      - name: Install tools
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq postgresql-client
           psql --version
 
-      - name: Try connections
+      - name: Check Supabase project is alive
         run: |
-          echo "=== Attempt 1: Session pooler ==="
-          psql "postgresql://postgres.vfxocdnquxhrhkjzemzf:${PGPASSWORD}@aws-0-eu-west-1.pooler.supabase.com:5432/postgres?sslmode=require" -c "SELECT version();" 2>&1 || true
+          echo "=== REST API check ==="
+          curl -s -o /dev/null -w "HTTP %{http_code}" "https://${PROJECT_REF}.supabase.co/rest/v1/" -H "apikey: sb_publishable_8fp4YVXfwVoZnxjMH59vnw_nyKAPlkP" || true
+          echo ""
+          echo "=== DNS for direct ==="
+          dig +short db.${PROJECT_REF}.supabase.co || nslookup db.${PROJECT_REF}.supabase.co || true
+          echo "=== DNS for pooler ==="
+          dig +short aws-0-eu-west-1.pooler.supabase.com || true
+          echo "=== Port check direct ==="
+          timeout 5 bash -c "echo > /dev/tcp/db.${PROJECT_REF}.supabase.co/5432" 2>&1 && echo "Port 5432 OPEN" || echo "Port 5432 CLOSED/TIMEOUT"
+          echo "=== Port check pooler ==="
+          timeout 5 bash -c "echo > /dev/tcp/aws-0-eu-west-1.pooler.supabase.com/5432" 2>&1 && echo "Pooler 5432 OPEN" || echo "Pooler 5432 CLOSED"
+          timeout 5 bash -c "echo > /dev/tcp/aws-0-eu-west-1.pooler.supabase.com/6543" 2>&1 && echo "Pooler 6543 OPEN" || echo "Pooler 6543 CLOSED"
 
-          echo "=== Attempt 2: Transaction pooler ==="
-          psql "postgresql://postgres.vfxocdnquxhrhkjzemzf:${PGPASSWORD}@aws-0-eu-west-1.pooler.supabase.com:6543/postgres?sslmode=require" -c "SELECT version();" 2>&1 || true
-
-          echo "=== Attempt 3: Direct connection ==="
-          psql "postgresql://postgres:${PGPASSWORD}@db.vfxocdnquxhrhkjzemzf.supabase.co:5432/postgres?sslmode=require" -c "SELECT version();" 2>&1 || true
-
-          echo "=== Attempt 4: Direct IPv6 ==="
-          psql "host=db.vfxocdnquxhrhkjzemzf.supabase.co port=5432 dbname=postgres user=postgres sslmode=require" -c "SELECT 1;" 2>&1 || true
-
-          echo "=== DNS check ==="
-          nslookup db.vfxocdnquxhrhkjzemzf.supabase.co 2>&1 || true
-          nslookup aws-0-eu-west-1.pooler.supabase.com 2>&1 || true
-
-      - name: Run schema via working connection
+      - name: Try all connection methods
         run: |
-          # Try session pooler first (most likely to work)
-          CONN="postgresql://postgres.vfxocdnquxhrhkjzemzf:${PGPASSWORD}@aws-0-eu-west-1.pooler.supabase.com:5432/postgres?sslmode=require"
-          psql "$CONN" -f supabase/schema.sql 2>&1 || \
-          psql "postgresql://postgres:${PGPASSWORD}@db.vfxocdnquxhrhkjzemzf.supabase.co:5432/postgres?sslmode=require" -f supabase/schema.sql 2>&1
-          echo "Schema done"
+          echo "=== 1. Direct ==="
+          psql "postgresql://postgres:${PGPASSWORD}@db.${PROJECT_REF}.supabase.co:5432/postgres?sslmode=require" -c "SELECT 1 as ok;" 2>&1 || echo "FAILED"
 
-      - name: Create admin user
-        run: |
-          CONN="postgresql://postgres.vfxocdnquxhrhkjzemzf:${PGPASSWORD}@aws-0-eu-west-1.pooler.supabase.com:5432/postgres?sslmode=require"
-          psql "$CONN" -f supabase/setup-admin.sql 2>&1 || \
-          psql "postgresql://postgres:${PGPASSWORD}@db.vfxocdnquxhrhkjzemzf.supabase.co:5432/postgres?sslmode=require" -f supabase/setup-admin.sql 2>&1
-          echo "Admin done"
+          echo "=== 2. Session pooler eu-west-1 ==="
+          psql "postgresql://postgres.${PROJECT_REF}:${PGPASSWORD}@aws-0-eu-west-1.pooler.supabase.com:5432/postgres?sslmode=require" -c "SELECT 1 as ok;" 2>&1 || echo "FAILED"
 
-      - name: Verify
-        run: |
-          CONN="postgresql://postgres.vfxocdnquxhrhkjzemzf:${PGPASSWORD}@aws-0-eu-west-1.pooler.supabase.com:5432/postgres?sslmode=require"
-          psql "$CONN" -c "SELECT tablename FROM pg_tables WHERE schemaname='public';" 2>&1 || true
-          psql "$CONN" -c "SELECT email FROM auth.users;" 2>&1 || true
+          echo "=== 3. Transaction pooler eu-west-1 ==="
+          psql "postgresql://postgres.${PROJECT_REF}:${PGPASSWORD}@aws-0-eu-west-1.pooler.supabase.com:6543/postgres?sslmode=require" -c "SELECT 1 as ok;" 2>&1 || echo "FAILED"
+
+          echo "=== 4. New pooler format ==="
+          psql "postgresql://postgres.${PROJECT_REF}:${PGPASSWORD}@${PROJECT_REF}.pooler.supabase.com:5432/postgres?sslmode=require" -c "SELECT 1 as ok;" 2>&1 || echo "FAILED"
+
+          echo "=== 5. Pooler eu-west-2 ==="
+          psql "postgresql://postgres.${PROJECT_REF}:${PGPASSWORD}@aws-0-eu-west-2.pooler.supabase.com:5432/postgres?sslmode=require" -c "SELECT 1 as ok;" 2>&1 || echo "FAILED"
+
+          echo "=== 6. No SSL ==="
+          psql "postgresql://postgres:${PGPASSWORD}@db.${PROJECT_REF}.supabase.co:5432/postgres?sslmode=prefer" -c "SELECT 1 as ok;" 2>&1 || echo "FAILED"
+
+      - name: Run schema if connected
+        if: success()
+        run: echo "Would run schema here if connection worked"
