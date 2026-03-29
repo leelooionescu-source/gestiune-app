@@ -1,9 +1,27 @@
+# Python (legacy)
 __pycache__/
 *.pyc
 *.pyo
 gestiune.db
-.env
 *.egg-info/
 dist/
 build/
+
+# Next.js
+.next/
+out/
+node_modules/
+
+# Environment
+.env
+.env.local
+.env.production.local
+
+# IDE
 .claude/
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
