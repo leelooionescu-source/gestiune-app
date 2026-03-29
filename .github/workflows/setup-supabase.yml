@@ -1,16 +1,18 @@
 name: Setup Supabase Database
 
 on:
-  push:
-    branches: ['claude/analyze-test-coverage-0UYsC']
-    paths: ['.github/workflows/setup-supabase.yml']
   workflow_dispatch:
+    inputs:
+      db_password:
+        description: 'Database password'
+        required: true
+        type: string
 
 jobs:
   setup:
     runs-on: ubuntu-latest
     env:
-      PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      PGPASSWORD: ${{ inputs.db_password }}
       DB_HOST: db.vfxocdnquxhrhkjzemzf.supabase.co
     steps:
       - uses: actions/checkout@v4
@@ -29,6 +31,8 @@ jobs:
 
       - name: Verify setup
         run: |
+          echo "=== Tables ==="
           psql "host=$DB_HOST port=5432 dbname=postgres user=postgres sslmode=require" -c "SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename;"
+          echo "=== Users ==="
           psql "host=$DB_HOST port=5432 dbname=postgres user=postgres sslmode=require" -c "SELECT email FROM auth.users;"
-          echo "Setup complete!"
+          echo "=== Setup complete! ==="
