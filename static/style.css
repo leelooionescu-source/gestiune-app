@@ -1,5 +1,8 @@
 body {
-    background-color: #f8f9fa;
+    font-family: 'Nunito', sans-serif;
+    background: linear-gradient(135deg, #ffffff 0%, #e8edf5 50%, #dce4f0 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
 }
 
 .card-stats {
