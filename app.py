@@ -1,11 +1,20 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, flash
+import json
+import tempfile
+from flask import Flask, render_template, request, redirect, url_for, flash, send_file, session
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
+import pdfplumber
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from database import get_db, init_db
 from models import User, create_admin_if_needed
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'gestiune-app-secret-key-2024')
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max upload
+
+UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -674,6 +683,190 @@ def facturi_sterge(id):
     db.close()
     flash('Factură ștearsă.', 'success')
     return redirect(url_for('facturi_lista'))
+
+
+# ==================== PDF TO EXCEL ====================
+
+def extract_pdf_tables(pdf_path):
+    """Extrage toate tabelele din PDF folosind pdfplumber."""
+    all_tables = []
+    with pdfplumber.open(pdf_path) as pdf:
+        for i, page in enumerate(pdf.pages):
+            tables = page.extract_tables()
+            for j, table in enumerate(tables):
+                if table and len(table) > 0:
+                    # Curăță celulele - înlocuiește None cu string gol
+                    cleaned = []
+                    for row in table:
+                        cleaned.append([str(cell).strip() if cell else '' for cell in row])
+                    all_tables.append({
+                        'page': i + 1,
+                        'table_index': j + 1,
+                        'rows': cleaned
+                    })
+
+        # Dacă nu s-au găsit tabele, extrage textul linie cu linie
+        if not all_tables:
+            text_rows = []
+            for page in pdf.pages:
+                text = page.extract_text()
+                if text:
+                    for line in text.split('\n'):
+                        line = line.strip()
+                        if line:
+                            text_rows.append([line])
+            if text_rows:
+                all_tables.append({
+                    'page': 1,
+                    'table_index': 1,
+                    'rows': text_rows
+                })
+    return all_tables
+
+
+@app.route('/pdf-to-excel', methods=['GET', 'POST'])
+@login_required
+def pdf_to_excel():
+    if request.method == 'POST':
+        if 'pdf_file' not in request.files:
+            flash('Nu a fost selectat niciun fișier.', 'danger')
+            return redirect(url_for('pdf_to_excel'))
+
+        file = request.files['pdf_file']
+        if file.filename == '':
+            flash('Nu a fost selectat niciun fișier.', 'danger')
+            return redirect(url_for('pdf_to_excel'))
+
+        if not file.filename.lower().endswith('.pdf'):
+            flash('Doar fișierele PDF sunt acceptate.', 'danger')
+            return redirect(url_for('pdf_to_excel'))
+
+        # Salvează fișierul temporar
+        pdf_filename = f"temp_{current_user.id}_{file.filename}"
+        pdf_path = os.path.join(UPLOAD_FOLDER, pdf_filename)
+        file.save(pdf_path)
+
+        try:
+            tables = extract_pdf_tables(pdf_path)
+            if not tables:
+                flash('Nu s-au găsit date în fișierul PDF.', 'warning')
+                os.remove(pdf_path)
+                return redirect(url_for('pdf_to_excel'))
+
+            # Salvează datele în sesiune pentru export
+            session['pdf_tables'] = json.dumps(tables, ensure_ascii=False)
+            session['pdf_original_name'] = file.filename
+
+            return render_template('pdf_to_excel.html',
+                                   tables=tables,
+                                   original_name=file.filename,
+                                   has_data=True)
+        except Exception as e:
+            flash(f'Eroare la procesarea PDF-ului: {str(e)}', 'danger')
+            if os.path.exists(pdf_path):
+                os.remove(pdf_path)
+            return redirect(url_for('pdf_to_excel'))
+        finally:
+            if os.path.exists(pdf_path):
+                os.remove(pdf_path)
+
+    return render_template('pdf_to_excel.html', tables=None, has_data=False)
+
+
+@app.route('/pdf-to-excel/download', methods=['POST'])
+@login_required
+def pdf_to_excel_download():
+    tables_json = session.get('pdf_tables')
+    original_name = session.get('pdf_original_name', 'document')
+
+    if not tables_json:
+        flash('Nu există date de exportat. Încarcă un PDF mai întâi.', 'danger')
+        return redirect(url_for('pdf_to_excel'))
+
+    tables = json.loads(tables_json)
+
+    # Verifică ce tabele au fost selectate
+    selected_tables = request.form.getlist('selected_tables')
+    use_first_row_header = 'first_row_header' in request.form
+
+    wb = Workbook()
+    wb.remove(wb.active)
+
+    header_font = Font(bold=True, color='FFFFFF', size=11)
+    header_fill = PatternFill(start_color='0D6EFD', end_color='0D6EFD', fill_type='solid')
+    header_alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
+    cell_alignment = Alignment(vertical='top', wrap_text=True)
+    thin_border = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
+
+    for idx, table in enumerate(tables):
+        table_key = str(idx)
+        if selected_tables and table_key not in selected_tables:
+            continue
+
+        sheet_name = f"Pagina {table['page']} - Tabel {table['table_index']}"
+        if len(sheet_name) > 31:
+            sheet_name = sheet_name[:31]
+        ws = wb.create_sheet(title=sheet_name)
+
+        rows = table['rows']
+        if not rows:
+            continue
+
+        start_row = 1
+        if use_first_row_header and len(rows) > 1:
+            for col_idx, header_val in enumerate(rows[0], 1):
+                cell = ws.cell(row=1, column=col_idx, value=header_val)
+                cell.font = header_font
+                cell.fill = header_fill
+                cell.alignment = header_alignment
+                cell.border = thin_border
+            start_row = 2
+            rows = rows[1:]
+
+        for row_idx, row in enumerate(rows, start_row):
+            for col_idx, val in enumerate(row, 1):
+                cell = ws.cell(row=row_idx, column=col_idx, value=val)
+                cell.alignment = cell_alignment
+                cell.border = thin_border
+
+        # Auto-dimensionare coloane
+        for col in ws.columns:
+            max_length = 0
+            col_letter = col[0].column_letter
+            for cell in col:
+                if cell.value:
+                    max_length = max(max_length, len(str(cell.value)))
+            ws.column_dimensions[col_letter].width = min(max_length + 4, 50)
+
+    if len(wb.sheetnames) == 0:
+        flash('Nu au fost selectate tabele pentru export.', 'warning')
+        return redirect(url_for('pdf_to_excel'))
+
+    # Salvează Excel temporar și trimite-l
+    excel_name = os.path.splitext(original_name)[0] + '.xlsx'
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx', dir=UPLOAD_FOLDER)
+    wb.save(tmp.name)
+    tmp.close()
+
+    response = send_file(
+        tmp.name,
+        as_attachment=True,
+        download_name=excel_name,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+
+    # Cleanup after send
+    @response.call_on_close
+    def cleanup():
+        if os.path.exists(tmp.name):
+            os.remove(tmp.name)
+
+    return response
 
 
 # Initialize DB and admin on import (needed for gunicorn)
