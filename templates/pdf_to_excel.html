@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% block title %}PDF to Excel{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2><i class="bi bi-file-earmark-pdf"></i> Import PDF in Excel</h2>
+        <p class="text-muted">Incarca un fisier PDF pentru a extrage datele tabelelor si a le descarca ca Excel.</p>
+    </div>
+</div>
+
+<!-- Upload Form -->
+<div class="row mb-4">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data" id="uploadForm">
+                    <div class="mb-3">
+                        <label for="pdf_file" class="form-label fw-bold">
+                            <i class="bi bi-upload"></i> Selecteaza fisierul PDF
+                        </label>
+                        <input type="file" class="form-control form-control-lg" id="pdf_file" name="pdf_file"
+                               accept=".pdf" required>
+                        <div class="form-text">Fisiere PDF cu dimensiunea maxima de 16MB.</div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-lg" id="btnUpload">
+                        <i class="bi bi-search"></i> Analizeaza PDF
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card shadow-sm bg-light">
+            <div class="card-body">
+                <h6><i class="bi bi-info-circle"></i> Cum functioneaza?</h6>
+                <ol class="small mb-0">
+                    <li>Incarca un fisier PDF cu tabele</li>
+                    <li>Sistemul extrage automat tabelele</li>
+                    <li>Previzualizeaza datele extrase</li>
+                    <li>Selecteaza tabelele dorite</li>
+                    <li>Descarca fisierul Excel</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if has_data and tables %}
+<!-- Preview Section -->
+<div class="row mb-3">
+    <div class="col">
+        <div class="alert alert-success">
+            <i class="bi bi-check-circle-fill"></i>
+            S-au gasit <strong>{{ tables|length }}</strong> tabel(e) in fisierul
+            <strong>{{ original_name }}</strong>.
+        </div>
+    </div>
+</div>
+
+<form method="POST" action="{{ url_for('pdf_to_excel_download') }}">
+    <div class="row mb-3">
+        <div class="col">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="first_row_header" name="first_row_header"
+                           checked>
+                    <label class="form-check-label" for="first_row_header">
+                        Primul rand este antet (header)
+                    </label>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="selectAll">
+                        <i class="bi bi-check-all"></i> Selecteaza toate
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="deselectAll">
+                        <i class="bi bi-x-lg"></i> Deselecteaza toate
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% for table in tables %}
+    <div class="card shadow-sm mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div class="form-check">
+                <input class="form-check-input table-checkbox" type="checkbox"
+                       name="selected_tables" value="{{ loop.index0 }}"
+                       id="table_{{ loop.index0 }}" checked>
+                <label class="form-check-label fw-bold" for="table_{{ loop.index0 }}">
+                    <i class="bi bi-table"></i> Tabel {{ table.table_index }} - Pagina {{ table.page }}
+                </label>
+            </div>
+            <span class="badge bg-primary">{{ table.rows|length }} randuri</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                <table class="table table-sm table-striped table-hover mb-0">
+                    {% for row in table.rows %}
+                    <tr>
+                        {% if loop.first %}
+                        {% for cell in row %}
+                        <th class="bg-light text-nowrap px-3 py-2">{{ cell }}</th>
+                        {% endfor %}
+                        {% else %}
+                        {% for cell in row %}
+                        <td class="px-3 py-1">{{ cell }}</td>
+                        {% endfor %}
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    <div class="row mb-4">
+        <div class="col text-center">
+            <button type="submit" class="btn btn-success btn-lg">
+                <i class="bi bi-file-earmark-excel"></i> Descarca Excel
+            </button>
+            <a href="{{ url_for('pdf_to_excel') }}" class="btn btn-outline-secondary btn-lg ms-2">
+                <i class="bi bi-arrow-counterclockwise"></i> Incarca alt PDF
+            </a>
+        </div>
+    </div>
+</form>
+{% endif %}
+
+<script>
+document.getElementById('uploadForm').addEventListener('submit', function() {
+    var btn = document.getElementById('btnUpload');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Se analizeaza...';
+});
+
+var selectAll = document.getElementById('selectAll');
+var deselectAll = document.getElementById('deselectAll');
+if (selectAll) {
+    selectAll.addEventListener('click', function() {
+        document.querySelectorAll('.table-checkbox').forEach(function(cb) { cb.checked = true; });
+    });
+    deselectAll.addEventListener('click', function() {
+        document.querySelectorAll('.table-checkbox').forEach(function(cb) { cb.checked = false; });
+    });
+}
+</script>
+{% endblock %}

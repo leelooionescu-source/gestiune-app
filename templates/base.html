@@ -51,6 +51,11 @@
                             <i class="bi bi-receipt"></i> Facturi
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'pdf_to_excel' in request.endpoint %}active{% endif %}" href="{{ url_for('pdf_to_excel') }}">
+                            <i class="bi bi-file-earmark-pdf"></i> PDF to Excel
+                        </a>
+                    </li>
                 </ul>
                 <ul class="navbar-nav">
                     {% if current_user.is_admin %}
