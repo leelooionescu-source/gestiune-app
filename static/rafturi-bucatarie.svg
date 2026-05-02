@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 720" font-family="system-ui, sans-serif">
+  <!-- fundal -->
+  <rect width="900" height="720" fill="#fafaf6"/>
+  <text x="450" y="36" text-anchor="middle" font-size="22" font-weight="bold" fill="#333">Rafturi bucătărie — vedere izometrică</text>
+
+  <!-- proiecție izometrică simplă: x' = x + 0.5*z ;  y' = y - 0.5*z
+       1 cm = 2 px. Origine (colț față-stânga jos) la (200, 600) -->
+  <!--
+    Lățime W = 100 cm  (axă X →)
+    Adâncime D = 80 cm sau 60 cm (axă Z, înclinată în spate)
+    Înălțime H (axă Y ↑)
+    Înălțimi: bază 70, mijloc 50, sus 40 -> total 160 cm
+  -->
+
+  <defs>
+    <!-- fețe lemn: trei tonuri pentru cele 3 direcții -->
+    <linearGradient id="front" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#cf9a66"/>
+      <stop offset="1" stop-color="#b8895a"/>
+    </linearGradient>
+    <linearGradient id="side" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#a07043"/>
+      <stop offset="1" stop-color="#8a5e36"/>
+    </linearGradient>
+    <linearGradient id="top" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#dcb07e"/>
+      <stop offset="1" stop-color="#c69a66"/>
+    </linearGradient>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#c0392b"/>
+    </marker>
+  </defs>
+
+  <g stroke="#5a3a1c" stroke-width="1.2" stroke-linejoin="round">
+    <!-- ============ CORP 1: bază 100 W x 80 D x 70 H, cu sertar ============ -->
+    <!-- Coordonate (cm) → pixeli izometric: fx = 200 + 2*x + 1*z ; fy = 600 - 2*y - 1*z -->
+
+    <!-- TOP corp 1 (la y=70) -->
+    <polygon points="200,460  400,460  480,420  280,420" fill="url(#top)"/>
+    <!-- față corp 1 -->
+    <polygon points="200,600  400,600  400,460  200,460" fill="url(#front)"/>
+    <!-- latură dreapta corp 1 -->
+    <polygon points="400,600  480,560  480,420  400,460" fill="url(#side)"/>
+
+    <!-- sertar (front) sus pe corp 1 — bandă de ~18 cm -->
+    <polygon points="206,460  394,460  394,496  206,496" fill="#a67442"/>
+    <!-- mâner sertar -->
+    <rect x="280" y="473" width="40" height="6" fill="#9a9a9a" stroke="#666" stroke-width="0.6"/>
+
+    <!-- linie raft intermediar (vizibil prin lateral) -->
+    <line x1="400" y1="528" x2="480" y2="488" stroke="#5a3a1c" stroke-width="1"/>
+    <line x1="200" y1="528" x2="400" y2="528" stroke="#5a3a1c" stroke-width="0.8" stroke-dasharray="3 3"/>
+
+    <!-- soclu (umbră jos) -->
+    <polygon points="210,600 390,600 390,608 210,608" fill="#5a3a1c" opacity="0.5" stroke="none"/>
+
+    <!-- ============ CORP 2: 100 W x 80 D x 50 H, raft deschis ============ -->
+    <!-- pe corp 1 → y de la 70 la 120 -->
+    <!-- TOP corp 2 -->
+    <polygon points="200,360  400,360  480,320  280,320" fill="url(#top)"/>
+    <!-- față corp 2 (deschisă — vedem pereții laterali și polița intermediară) -->
+    <polygon points="200,460  400,460  400,360  200,360" fill="#efe2cf"/>
+    <!-- pereții laterali (grosimea plăcilor) -->
+    <polygon points="200,460  214,460  214,360  200,360" fill="url(#front)"/>
+    <polygon points="386,460  400,460  400,360  386,360" fill="url(#front)"/>
+    <!-- latura dreapta -->
+    <polygon points="400,460  480,420  480,320  400,360" fill="url(#side)"/>
+    <!-- poliță intermediară pe la jumătate (h=25) -->
+    <polygon points="214,410 386,410 466,370 294,370" fill="url(#top)" opacity="0.95"/>
+    <line x1="214" y1="410" x2="386" y2="410" stroke="#5a3a1c"/>
+
+    <!-- ============ CORP 3: 100 W x 60 D x 40 H, retras 20 cm ============ -->
+    <!-- pe corp 2 → y de la 120 la 160. Retras: începe la z=20 (în spate cu 20) -->
+    <!-- noua origine z începe la 20 → offset px: dx=+20, dy=-20 -->
+    <!-- baza corp 3: x in [0..100], z in [20..80], y=120 -->
+    <!-- coordonate pixeli:
+         față-stânga jos: (200+20, 360-20) = (220, 340)
+         față-dreapta jos: (400+20, 360-20) = (420, 340)
+         spate-dreapta jos: (400+80, 360-80) = (480, 280)
+         spate-stânga jos: (200+80, 360-80) = (280, 280)
+         sus +40h → -80 px y -->
+    <!-- TOP -->
+    <polygon points="220,260  420,260  480,200  280,200" fill="url(#top)"/>
+    <!-- față -->
+    <polygon points="220,340  420,340  420,260  220,260" fill="#efe2cf"/>
+    <!-- pereți laterali (grosime) -->
+    <polygon points="220,340 234,340 234,260 220,260" fill="url(#front)"/>
+    <polygon points="406,340 420,340 420,260 406,260" fill="url(#front)"/>
+    <!-- latură dreapta -->
+    <polygon points="420,340  480,280  480,200  420,260" fill="url(#side)"/>
+    <!-- poliță intermediară -->
+    <polygon points="234,300 406,300 466,240 294,240" fill="url(#top)" opacity="0.95"/>
+    <line x1="234" y1="300" x2="406" y2="300" stroke="#5a3a1c"/>
+
+    <!-- linie de aliniere ce arată retragerea (jos față corp 3 până la blat corp 2) -->
+    <line x1="200" y1="360" x2="220" y2="340" stroke="#888" stroke-dasharray="3 3"/>
+    <line x1="400" y1="360" x2="420" y2="340" stroke="#888" stroke-dasharray="3 3"/>
+  </g>
+
+  <!-- ============ COTE ============ -->
+  <g font-size="14" fill="#c0392b" stroke="#c0392b" stroke-width="1.2">
+
+    <!-- înălțimi pe partea dreaptă, în dreptul feței -->
+    <!-- cota 70 cm (corp 1) -->
+    <line x1="510" y1="600" x2="510" y2="460" marker-start="url(#arr)" marker-end="url(#arr)"/>
+    <line x1="400" y1="600" x2="515" y2="600" stroke-width="0.8" stroke-dasharray="3 3"/>
+    <line x1="400" y1="460" x2="515" y2="460" stroke-width="0.8" stroke-dasharray="3 3"/>
+    <text x="520" y="535" stroke="none" font-weight="bold">70 cm  (bază + sertar)</text>
+
+    <!-- cota 50 cm (corp 2) -->
+    <line x1="510" y1="460" x2="510" y2="360" marker-start="url(#arr)" marker-end="url(#arr)"/>
+    <line x1="400" y1="360" x2="515" y2="360" stroke-width="0.8" stroke-dasharray="3 3"/>
+    <text x="520" y="415" stroke="none" font-weight="bold">50 cm</text>
+
+    <!-- cota 40 cm (corp 3) -->
+    <line x1="510" y1="340" x2="510" y2="260" marker-start="url(#arr)" marker-end="url(#arr)"/>
+    <line x1="420" y1="340" x2="515" y2="340" stroke-width="0.8" stroke-dasharray="3 3"/>
+    <line x1="420" y1="260" x2="515" y2="260" stroke-width="0.8" stroke-dasharray="3 3"/>
+    <text x="520" y="305" stroke="none" font-weight="bold">40 cm</text>
+
+    <!-- TOTAL înălțime, mai în afară -->
+    <line x1="640" y1="600" x2="640" y2="260" marker-start="url(#arr)" marker-end="url(#arr)"/>
+    <line x1="510" y1="600" x2="645" y2="600" stroke-width="0.6" stroke-dasharray="3 3"/>
+    <line x1="510" y1="260" x2="645" y2="260" stroke-width="0.6" stroke-dasharray="3 3"/>
+    <text x="650" y="430" stroke="none" font-weight="bold">Total 160 cm</text>
+
+    <!-- lățime 100 cm — în față, jos -->
+    <line x1="200" y1="640" x2="400" y2="640" marker-start="url(#arr)" marker-end="url(#arr)"/>
+    <line x1="200" y1="600" x2="200" y2="645" stroke-width="0.6" stroke-dasharray="3 3"/>
+    <line x1="400" y1="600" x2="400" y2="645" stroke-width="0.6" stroke-dasharray="3 3"/>
+    <text x="280" y="660" stroke="none" font-weight="bold">100 cm  (lățime)</text>
+
+    <!-- adâncime 80 cm — pe latura dreaptă jos (de-a lungul axei z) -->
+    <line x1="400" y1="618" x2="480" y2="578" marker-start="url(#arr)" marker-end="url(#arr)"/>
+    <line x1="400" y1="600" x2="404" y2="622" stroke-width="0.6" stroke-dasharray="3 3"/>
+    <line x1="480" y1="560" x2="484" y2="582" stroke-width="0.6" stroke-dasharray="3 3"/>
+    <text x="430" y="615" stroke="none" font-weight="bold">80 cm adâncime</text>
+
+    <!-- adâncime 60 cm corp 3 — sus, deasupra -->
+    <line x1="220" y1="245" x2="280" y2="215" marker-start="url(#arr)" marker-end="url(#arr)"/>
+    <line x1="220" y1="260" x2="218" y2="242" stroke-width="0.6" stroke-dasharray="3 3"/>
+    <line x1="280" y1="200" x2="278" y2="218" stroke-width="0.6" stroke-dasharray="3 3"/>
+    <text x="120" y="225" stroke="none" font-weight="bold">60 cm adâncime</text>
+
+    <!-- retragere 20 cm — sus, în față, între blat corp 2 și fața corp 3 -->
+    <line x1="200" y1="378" x2="220" y2="358" marker-start="url(#arr)" marker-end="url(#arr)"/>
+    <text x="80" y="380" stroke="none" font-weight="bold">retras 20 cm</text>
+  </g>
+
+  <!-- etichete pe corpuri -->
+  <g font-size="12" fill="#333">
+    <text x="290" y="485" text-anchor="middle" font-weight="bold" fill="#fff">SERTAR</text>
+    <text x="290" y="565" text-anchor="middle">raft deschis</text>
+    <text x="300" y="415" text-anchor="middle">raft deschis</text>
+    <text x="320" y="305" text-anchor="middle">raft retras</text>
+  </g>
+
+  <!-- legendă mică jos -->
+  <g font-size="12" fill="#555">
+    <text x="20" y="690">• fără uși · fără spate · 3 corpuri suprapuse</text>
+    <text x="20" y="708">• cote în cm · vedere izometrică (scară 1 cm = 2 px)</text>
+  </g>
+</svg>
