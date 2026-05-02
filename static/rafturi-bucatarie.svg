@@ -1,164 +1,625 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 720" font-family="system-ui, sans-serif">
-  <!-- fundal -->
-  <rect width="900" height="720" fill="#fafaf6"/>
-  <text x="450" y="36" text-anchor="middle" font-size="22" font-weight="bold" fill="#333">Rafturi bucătărie — vedere izometrică</text>
-
-  <!-- proiecție izometrică simplă: x' = x + 0.5*z ;  y' = y - 0.5*z
-       1 cm = 2 px. Origine (colț față-stânga jos) la (200, 600) -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1700 1200" font-family="Arial, sans-serif">
   <!--
-    Lățime W = 100 cm  (axă X →)
-    Adâncime D = 80 cm sau 60 cm (axă Z, înclinată în spate)
-    Înălțime H (axă Y ↑)
-    Înălțimi: bază 70, mijloc 50, sus 40 -> total 160 cm
+    DESEN TEHNIC DE EXECUȚIE — RAFTURI BUCĂTĂRIE
+    Toate dimensiunile în mm. Material: PAL melaminat 18 mm.
+    Format optimizat pentru tipărire A3 landscape.
+    Scară nominală 1:30 (pe A3); pe ecran scalează cu zoom.
   -->
-
   <defs>
-    <!-- fețe lemn: trei tonuri pentru cele 3 direcții -->
-    <linearGradient id="front" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#cf9a66"/>
-      <stop offset="1" stop-color="#b8895a"/>
-    </linearGradient>
-    <linearGradient id="side" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#a07043"/>
-      <stop offset="1" stop-color="#8a5e36"/>
-    </linearGradient>
-    <linearGradient id="top" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#dcb07e"/>
-      <stop offset="1" stop-color="#c69a66"/>
-    </linearGradient>
-    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
-      <path d="M0,0 L10,5 L0,10 z" fill="#c0392b"/>
+    <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="6" height="6" fill="#e8d4b0"/>
+      <line x1="0" y1="0" x2="0" y2="6" stroke="#8a5e36" stroke-width="0.6"/>
+    </pattern>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#000"/>
     </marker>
+    <style>
+      .pal { fill: url(#hatch); stroke: #5a3a1c; stroke-width: 0.8; }
+      .outline { fill: none; stroke: #000; stroke-width: 1.2; }
+      .hidden { fill: none; stroke: #888; stroke-width: 0.7; stroke-dasharray: 4 3; }
+      .center { fill: none; stroke: #888; stroke-width: 0.5; stroke-dasharray: 8 2 1 2; }
+      .dim { stroke: #c0392b; stroke-width: 0.7; fill: none; }
+      .dim-ext { stroke: #c0392b; stroke-width: 0.4; stroke-dasharray: 2 2; fill: none; }
+      .dim-text { fill: #c0392b; font-size: 11px; font-weight: bold; text-anchor: middle; }
+      .panel-title { font-size: 14px; font-weight: bold; fill: #1a1a1a; }
+      .part-id { fill: #1565c0; font-size: 10px; font-weight: bold; text-anchor: middle; }
+      .part-id-bg { fill: #fff; stroke: #1565c0; stroke-width: 0.8; }
+      .label { fill: #333; font-size: 10px; }
+      .frame { fill: none; stroke: #333; stroke-width: 0.6; }
+      .table-th { fill: #2a2a2a; font-size: 11px; font-weight: bold; }
+      .table-td { fill: #1a1a1a; font-size: 10px; }
+      .table-row-line { stroke: #ccc; stroke-width: 0.4; }
+    </style>
   </defs>
 
-  <g stroke="#5a3a1c" stroke-width="1.2" stroke-linejoin="round">
-    <!-- ============ CORP 1: bază 100 W x 80 D x 70 H, cu sertar ============ -->
-    <!-- Coordonate (cm) → pixeli izometric: fx = 200 + 2*x + 1*z ; fy = 600 - 2*y - 1*z -->
+  <rect width="1700" height="1200" fill="#fff"/>
 
-    <!-- TOP corp 1 (la y=70) -->
-    <polygon points="200,460  400,460  480,420  280,420" fill="url(#top)"/>
-    <!-- față corp 1 -->
-    <polygon points="200,600  400,600  400,460  200,460" fill="url(#front)"/>
-    <!-- latură dreapta corp 1 -->
-    <polygon points="400,600  480,560  480,420  400,460" fill="url(#side)"/>
+  <!-- ===== ANTET ===== -->
+  <rect x="20" y="20" width="1660" height="50" class="frame"/>
+  <text x="40" y="52" font-size="20" font-weight="bold" fill="#000">RAFTURI BUCĂTĂRIE — DESEN TEHNIC DE EXECUȚIE</text>
+  <text x="900" y="40" font-size="11" fill="#333">Material: PAL melaminat 18 mm  ·  Cant ABS 0.4 mm pe muchii vizibile</text>
+  <text x="900" y="56" font-size="11" fill="#333">Asamblare: dibluri Ø8×30 + euroșuruburi 6.3×50  ·  Cote în mm</text>
+  <text x="1500" y="40" font-size="11" fill="#333">Scară 1:30 (A3)</text>
+  <text x="1500" y="56" font-size="11" fill="#333">Fără uși · Fără spate</text>
 
-    <!-- sertar (front) sus pe corp 1 — bandă de ~18 cm -->
-    <polygon points="206,460  394,460  394,496  206,496" fill="#a67442"/>
-    <!-- mâner sertar -->
-    <rect x="280" y="473" width="40" height="6" fill="#9a9a9a" stroke="#666" stroke-width="0.6"/>
+  <!--
+    ===== PANOU 1: VEDERE DIN FAȚĂ =====
+    Origine bottom-left la (160, 750). Scară 0.35 px/mm.
+    Total figure: 600 mm × 1600 mm (cu picioare) → 210 × 560 px
+    mm→px:  x = 160 + 0.35*mm,  y = 750 - 0.35*mm
+  -->
+  <g id="front-view">
+    <text x="80" y="100" class="panel-title">1. VEDERE DIN FAȚĂ</text>
+    <rect x="40" y="80" width="440" height="700" class="frame"/>
 
-    <!-- linie raft intermediar (vizibil prin lateral) -->
-    <line x1="400" y1="528" x2="480" y2="488" stroke="#5a3a1c" stroke-width="1"/>
-    <line x1="200" y1="528" x2="400" y2="528" stroke="#5a3a1c" stroke-width="0.8" stroke-dasharray="3 3"/>
+    <!-- linia podelei -->
+    <line x1="100" y1="750" x2="440" y2="750" stroke="#000" stroke-width="0.5"/>
+    <text x="445" y="754" font-size="9" fill="#666">podea</text>
 
-    <!-- soclu (umbră jos) -->
-    <polygon points="210,600 390,600 390,608 210,608" fill="#5a3a1c" opacity="0.5" stroke="none"/>
+    <!-- ===== Picioare reglabile (4 buc, 50 wide × 100 tall) — vizibile cele 2 din față ===== -->
+    <!-- piciorul stâng: x mm 0-50, y mm 0-100 -->
+    <rect x="160" y="715" width="17.5" height="35" fill="#888" stroke="#444" stroke-width="0.5"/>
+    <!-- piciorul drept: x mm 550-600 -->
+    <rect x="352.5" y="715" width="17.5" height="35" fill="#888" stroke="#444" stroke-width="0.5"/>
 
-    <!-- ============ CORP 2: 100 W x 80 D x 50 H, raft deschis ============ -->
-    <!-- pe corp 1 → y de la 70 la 120 -->
-    <!-- TOP corp 2 -->
-    <polygon points="200,360  400,360  480,320  280,320" fill="url(#top)"/>
-    <!-- față corp 2 (deschisă — vedem pereții laterali și polița intermediară) -->
-    <polygon points="200,460  400,460  400,360  200,360" fill="#efe2cf"/>
-    <!-- pereții laterali (grosimea plăcilor) -->
-    <polygon points="200,460  214,460  214,360  200,360" fill="url(#front)"/>
-    <polygon points="386,460  400,460  400,360  386,360" fill="url(#front)"/>
-    <!-- latura dreapta -->
-    <polygon points="400,460  480,420  480,320  400,360" fill="url(#side)"/>
-    <!-- poliță intermediară pe la jumătate (h=25) -->
-    <polygon points="214,410 386,410 466,370 294,370" fill="url(#top)" opacity="0.95"/>
-    <line x1="214" y1="410" x2="386" y2="410" stroke="#5a3a1c"/>
+    <!-- ===== Lateralele continui P1 (2 buc) — y mm 100..1300, grosime 18 mm fiecare ===== -->
+    <!-- Stânga: x mm 0-18, y mm 100-1300 -->
+    <rect x="160" y="295" width="6.3" height="420" class="pal"/>
+    <!-- Dreapta: x mm 582-600 -->
+    <rect x="363.7" y="295" width="6.3" height="420" class="pal"/>
 
-    <!-- ============ CORP 3: 100 W x 60 D x 40 H, retras 20 cm ============ -->
-    <!-- pe corp 2 → y de la 120 la 160. Retras: începe la z=20 (în spate cu 20) -->
-    <!-- noua origine z începe la 20 → offset px: dx=+20, dy=-20 -->
-    <!-- baza corp 3: x in [0..100], z in [20..80], y=120 -->
-    <!-- coordonate pixeli:
-         față-stânga jos: (200+20, 360-20) = (220, 340)
-         față-dreapta jos: (400+20, 360-20) = (420, 340)
-         spate-dreapta jos: (400+80, 360-80) = (480, 280)
-         spate-stânga jos: (200+80, 360-80) = (280, 280)
-         sus +40h → -80 px y -->
-    <!-- TOP -->
-    <polygon points="220,260  420,260  480,200  280,200" fill="url(#top)"/>
-    <!-- față -->
-    <polygon points="220,340  420,340  420,260  220,260" fill="#efe2cf"/>
-    <!-- pereți laterali (grosime) -->
-    <polygon points="220,340 234,340 234,260 220,260" fill="url(#front)"/>
-    <polygon points="406,340 420,340 420,260 406,260" fill="url(#front)"/>
-    <!-- latură dreapta -->
-    <polygon points="420,340  480,280  480,200  420,260" fill="url(#side)"/>
-    <!-- poliță intermediară -->
-    <polygon points="234,300 406,300 466,240 294,240" fill="url(#top)" opacity="0.95"/>
-    <line x1="234" y1="300" x2="406" y2="300" stroke="#5a3a1c"/>
+    <!-- ===== Polița P3 (jos corp 1) — y mm 100-118, x mm 18-582 ===== -->
+    <rect x="166.3" y="708.7" width="197.4" height="6.3" class="pal"/>
 
-    <!-- linie de aliniere ce arată retragerea (jos față corp 3 până la blat corp 2) -->
-    <line x1="200" y1="360" x2="220" y2="340" stroke="#888" stroke-dasharray="3 3"/>
-    <line x1="400" y1="360" x2="420" y2="340" stroke="#888" stroke-dasharray="3 3"/>
+    <!-- ===== Polița P4 (sub sertar, corp 1) — y mm 400-418 ===== -->
+    <rect x="166.3" y="603.7" width="197.4" height="6.3" class="pal"/>
+
+    <!-- ===== Sertar P10 (front) — y mm 632-782, înălțime 150 mm — front 18 mm ===== -->
+    <rect x="166.3" y="476.7" width="197.4" height="52.5" fill="#c69968" stroke="#5a3a1c" stroke-width="0.8"/>
+    <!-- mâner -->
+    <rect x="240" y="498.7" width="50" height="6" rx="2" fill="#888" stroke="#444" stroke-width="0.5"/>
+    <text x="265" y="510" font-size="8" fill="#fff" text-anchor="middle">SERTAR</text>
+
+    <!-- ===== Polița P5 (deasupra sertarului — nu mai e blat separat fiind lateralele continui) — y mm 800-818 ===== -->
+    <rect x="166.3" y="463" width="197.4" height="6.3" class="pal"/>
+
+    <!-- ===== Polițe P6 corp 2 (2 buc) — y mm 980 și y mm 1140 (echidistante în 800-1300) ===== -->
+    <!-- Spațiu interior corp 2: 818-1282 = 464 mm. Împărțit în 3: ~155 mm fiecare. Polițe la 973-991 și 1146-1164 -->
+    <rect x="166.3" y="408.5" width="197.4" height="6.3" class="pal"/>
+    <rect x="166.3" y="348" width="197.4" height="6.3" class="pal"/>
+
+    <!-- ===== P7 Top corp 2 / Bază corp 3 — y mm 1282-1300, x mm 0-600 ===== -->
+    <rect x="160" y="295" width="210" height="6.3" class="pal"/>
+
+    <!-- ===== Lateralele P2 corp 3 — y mm 1300-1582, grosime 18, x mm 0-18 și 582-600 ===== -->
+    <rect x="160" y="196.3" width="6.3" height="98.7" class="pal"/>
+    <rect x="363.7" y="196.3" width="6.3" height="98.7" class="pal"/>
+
+    <!-- ===== Polițe P8 corp 3 (2 buc) — în spațiul 1300-1582 (282 mm util între bază și top) ===== -->
+    <!-- Polițe la y mm 1394-1412 și y mm 1488-1506 -->
+    <rect x="166.3" y="262.6" width="197.4" height="6.3" class="pal"/>
+    <rect x="166.3" y="229.7" width="197.4" height="6.3" class="pal"/>
+
+    <!-- ===== P9 Top corp 3 — y mm 1582-1600 ===== -->
+    <rect x="160" y="190" width="210" height="6.3" class="pal"/>
+
+    <!-- ===== Etichete piese (cerculețe) ===== -->
+    <g>
+      <circle cx="155" cy="500" r="8" class="part-id-bg"/>
+      <text x="155" y="503" class="part-id">P1</text>
+
+      <circle cx="155" cy="220" r="8" class="part-id-bg"/>
+      <text x="155" y="223" class="part-id">P2</text>
+
+      <circle cx="263" cy="725" r="8" class="part-id-bg"/>
+      <text x="263" y="728" class="part-id">P3</text>
+
+      <circle cx="263" cy="620" r="8" class="part-id-bg"/>
+      <text x="263" y="623" class="part-id">P4</text>
+
+      <circle cx="263" cy="478" r="8" class="part-id-bg"/>
+      <text x="263" y="481" class="part-id">P5</text>
+
+      <circle cx="263" cy="425" r="8" class="part-id-bg"/>
+      <text x="263" y="428" class="part-id">P6</text>
+
+      <circle cx="263" cy="312" r="8" class="part-id-bg"/>
+      <text x="263" y="315" class="part-id">P7</text>
+
+      <circle cx="263" cy="247" r="8" class="part-id-bg"/>
+      <text x="263" y="250" class="part-id">P8</text>
+
+      <circle cx="263" cy="207" r="8" class="part-id-bg"/>
+      <text x="263" y="210" class="part-id">P9</text>
+
+      <circle cx="320" cy="500" r="8" class="part-id-bg"/>
+      <text x="320" y="503" class="part-id">P10</text>
+
+      <circle cx="170" cy="730" r="8" class="part-id-bg"/>
+      <text x="170" y="733" class="part-id">P14</text>
+    </g>
+
+    <!-- ===== COTE pe verticală (pe partea dreaptă) ===== -->
+    <g>
+      <!-- Picioare 100 -->
+      <line x1="395" y1="715" x2="425" y2="715" class="dim-ext"/>
+      <line x1="395" y1="750" x2="425" y2="750" class="dim-ext"/>
+      <line x1="420" y1="715" x2="420" y2="750" class="dim" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+      <text x="430" y="736" class="dim-text" text-anchor="start">100</text>
+
+      <!-- Corp 1 — 700 mm -->
+      <line x1="395" y1="463" x2="425" y2="463" class="dim-ext"/>
+      <line x1="420" y1="463" x2="420" y2="715" class="dim" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+      <text x="430" y="592" class="dim-text" text-anchor="start">700  (corp 1)</text>
+
+      <!-- Corp 2 — 500 mm -->
+      <line x1="395" y1="295" x2="425" y2="295" class="dim-ext"/>
+      <line x1="420" y1="295" x2="420" y2="463" class="dim" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+      <text x="430" y="382" class="dim-text" text-anchor="start">500  (corp 2)</text>
+
+      <!-- Corp 3 — 300 mm -->
+      <line x1="395" y1="190" x2="425" y2="190" class="dim-ext"/>
+      <line x1="420" y1="190" x2="420" y2="295" class="dim" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+      <text x="430" y="245" class="dim-text" text-anchor="start">300  (corp 3)</text>
+
+      <!-- Total 1500 (fără picioare) -->
+      <line x1="455" y1="190" x2="455" y2="715" class="dim" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+      <text x="465" y="455" class="dim-text" text-anchor="start" transform="rotate(-90 465 455)">TOTAL 1500</text>
+    </g>
+
+    <!-- ===== Cote interioare polițe pe stânga ===== -->
+    <g>
+      <!-- spațiu sub poliță P4 (mm 118-400 = 282) -->
+      <line x1="125" y1="603.7" x2="155" y2="603.7" class="dim-ext"/>
+      <line x1="125" y1="708.7" x2="155" y2="708.7" class="dim-ext"/>
+      <line x1="135" y1="603.7" x2="135" y2="708.7" class="dim" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+      <text x="120" y="660" class="dim-text" text-anchor="end">282</text>
+
+      <!-- spațiu între P4 și sertar (mm 418-632 = 214) -->
+      <line x1="125" y1="529.2" x2="155" y2="529.2" class="dim-ext"/>
+      <line x1="135" y1="529.2" x2="135" y2="603.7" class="dim" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+      <text x="120" y="570" class="dim-text" text-anchor="end">214</text>
+
+      <!-- sertar 150 -->
+      <line x1="125" y1="476.7" x2="155" y2="476.7" class="dim-ext"/>
+      <line x1="135" y1="476.7" x2="135" y2="529.2" class="dim" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+      <text x="120" y="506" class="dim-text" text-anchor="end">150</text>
+
+      <!-- spațiu corp 2 sus (3 spații de ~155) -->
+      <line x1="125" y1="408.5" x2="155" y2="408.5" class="dim-ext"/>
+      <line x1="135" y1="408.5" x2="135" y2="463" class="dim" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+      <text x="120" y="439" class="dim-text" text-anchor="end">155</text>
+
+      <line x1="125" y1="348" x2="155" y2="348" class="dim-ext"/>
+      <line x1="135" y1="348" x2="135" y2="408.5" class="dim" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+      <text x="120" y="380" class="dim-text" text-anchor="end">155</text>
+
+      <line x1="135" y1="295" x2="135" y2="348" class="dim" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+      <text x="120" y="324" class="dim-text" text-anchor="end">152</text>
+
+      <!-- corp 3: 3 spații de ~88 -->
+      <line x1="125" y1="262.6" x2="155" y2="262.6" class="dim-ext"/>
+      <line x1="125" y1="295" x2="155" y2="295" class="dim-ext"/>
+      <line x1="135" y1="262.6" x2="135" y2="295" class="dim" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+      <text x="120" y="282" class="dim-text" text-anchor="end">88</text>
+
+      <line x1="125" y1="229.7" x2="155" y2="229.7" class="dim-ext"/>
+      <line x1="135" y1="229.7" x2="135" y2="262.6" class="dim" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+      <text x="120" y="249" class="dim-text" text-anchor="end">88</text>
+
+      <line x1="135" y1="196.3" x2="135" y2="229.7" class="dim" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+      <text x="120" y="216" class="dim-text" text-anchor="end">88</text>
+    </g>
+
+    <!-- ===== Cote pe orizontală (lățimi) ===== -->
+    <g>
+      <!-- lățime totală 600 -->
+      <line x1="160" y1="775" x2="160" y2="755" class="dim-ext"/>
+      <line x1="370" y1="775" x2="370" y2="755" class="dim-ext"/>
+      <line x1="160" y1="770" x2="370" y2="770" class="dim" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+      <text x="265" y="785" class="dim-text">600  (lățime)</text>
+    </g>
   </g>
 
-  <!-- ============ COTE ============ -->
-  <g font-size="14" fill="#c0392b" stroke="#c0392b" stroke-width="1.2">
+  <!--
+    ===== PANOU 2: VEDERE LATERALĂ / SECȚIUNE =====
+    Origine bottom-left la (530, 750). Scară 0.35 px/mm.
+    Total figure: 800 mm × 1600 mm (cu picioare) → 280 × 560 px
+    mm→px:  x = 530 + 0.35*mm,  y = 750 - 0.35*mm
+  -->
+  <g id="side-view">
+    <text x="510" y="100" class="panel-title">2. VEDERE LATERALĂ (SECȚIUNE)</text>
+    <rect x="490" y="80" width="440" height="700" class="frame"/>
 
-    <!-- înălțimi pe partea dreaptă, în dreptul feței -->
-    <!-- cota 70 cm (corp 1) -->
-    <line x1="510" y1="600" x2="510" y2="460" marker-start="url(#arr)" marker-end="url(#arr)"/>
-    <line x1="400" y1="600" x2="515" y2="600" stroke-width="0.8" stroke-dasharray="3 3"/>
-    <line x1="400" y1="460" x2="515" y2="460" stroke-width="0.8" stroke-dasharray="3 3"/>
-    <text x="520" y="535" stroke="none" font-weight="bold">70 cm  (bază + sertar)</text>
+    <line x1="510" y1="750" x2="900" y2="750" stroke="#000" stroke-width="0.5"/>
+    <text x="905" y="754" font-size="9" fill="#666">podea</text>
 
-    <!-- cota 50 cm (corp 2) -->
-    <line x1="510" y1="460" x2="510" y2="360" marker-start="url(#arr)" marker-end="url(#arr)"/>
-    <line x1="400" y1="360" x2="515" y2="360" stroke-width="0.8" stroke-dasharray="3 3"/>
-    <text x="520" y="415" stroke="none" font-weight="bold">50 cm</text>
+    <!-- picioare (vedere laterală, 50 mm wide × 100 tall, la fața și spate) -->
+    <rect x="530" y="715" width="17.5" height="35" fill="#888" stroke="#444" stroke-width="0.5"/>
+    <rect x="782.5" y="715" width="17.5" height="35" fill="#888" stroke="#444" stroke-width="0.5"/>
 
-    <!-- cota 40 cm (corp 3) -->
-    <line x1="510" y1="340" x2="510" y2="260" marker-start="url(#arr)" marker-end="url(#arr)"/>
-    <line x1="420" y1="340" x2="515" y2="340" stroke-width="0.8" stroke-dasharray="3 3"/>
-    <line x1="420" y1="260" x2="515" y2="260" stroke-width="0.8" stroke-dasharray="3 3"/>
-    <text x="520" y="305" stroke="none" font-weight="bold">40 cm</text>
+    <!-- Lateralele continui P1 (în secțiune e doar un dreptunghi 800×1200) -->
+    <rect x="530" y="295" width="280" height="420" class="pal"/>
 
-    <!-- TOTAL înălțime, mai în afară -->
-    <line x1="640" y1="600" x2="640" y2="260" marker-start="url(#arr)" marker-end="url(#arr)"/>
-    <line x1="510" y1="600" x2="645" y2="600" stroke-width="0.6" stroke-dasharray="3 3"/>
-    <line x1="510" y1="260" x2="645" y2="260" stroke-width="0.6" stroke-dasharray="3 3"/>
-    <text x="650" y="430" stroke="none" font-weight="bold">Total 160 cm</text>
+    <!-- ===== Polițele văzute prin secțiune (linii orizontale subțiri) ===== -->
+    <!-- P3 jos corp 1 (mm 100-118 din y) -->
+    <rect x="530" y="708.7" width="280" height="6.3" fill="#fff" stroke="#5a3a1c" stroke-width="0.6"/>
+    <!-- P4 sub sertar (mm 400-418) -->
+    <rect x="530" y="603.7" width="280" height="6.3" fill="#fff" stroke="#5a3a1c" stroke-width="0.6"/>
+    <!-- P5 deasupra sertar (mm 800-818) -->
+    <rect x="530" y="463" width="280" height="6.3" fill="#fff" stroke="#5a3a1c" stroke-width="0.6"/>
+    <!-- P6 polițe corp 2 (mm 973-991 și 1146-1164) -->
+    <rect x="530" y="408.5" width="280" height="6.3" fill="#fff" stroke="#5a3a1c" stroke-width="0.6"/>
+    <rect x="530" y="348" width="280" height="6.3" fill="#fff" stroke="#5a3a1c" stroke-width="0.6"/>
 
-    <!-- lățime 100 cm — în față, jos -->
-    <line x1="200" y1="640" x2="400" y2="640" marker-start="url(#arr)" marker-end="url(#arr)"/>
-    <line x1="200" y1="600" x2="200" y2="645" stroke-width="0.6" stroke-dasharray="3 3"/>
-    <line x1="400" y1="600" x2="400" y2="645" stroke-width="0.6" stroke-dasharray="3 3"/>
-    <text x="280" y="660" stroke="none" font-weight="bold">100 cm  (lățime)</text>
+    <!-- ===== Sertar — corp + glisieră (între P4 și P5, x mm 0-750 din față) ===== -->
+    <!-- Front sertar la fața din față (x mm 0..18) -->
+    <rect x="530" y="476.7" width="6.3" height="52.5" fill="#c69968" stroke="#5a3a1c" stroke-width="0.7"/>
+    <!-- Corp sertar (laterală secționată) — adâncime 750 mm, înălțime ~130 mm, începe după 18 mm -->
+    <rect x="536.3" y="481" width="262.5" height="44" fill="none" stroke="#5a3a1c" stroke-width="0.7" stroke-dasharray="3 2"/>
+    <!-- glisieră telescopică simbolic -->
+    <line x1="530" y1="500" x2="793" y2="500" stroke="#1565c0" stroke-width="0.6" stroke-dasharray="6 2"/>
+    <text x="660" y="494" font-size="8" fill="#1565c0" text-anchor="middle">glisieră telescopică 750 mm</text>
 
-    <!-- adâncime 80 cm — pe latura dreaptă jos (de-a lungul axei z) -->
-    <line x1="400" y1="618" x2="480" y2="578" marker-start="url(#arr)" marker-end="url(#arr)"/>
-    <line x1="400" y1="600" x2="404" y2="622" stroke-width="0.6" stroke-dasharray="3 3"/>
-    <line x1="480" y1="560" x2="484" y2="582" stroke-width="0.6" stroke-dasharray="3 3"/>
-    <text x="430" y="615" stroke="none" font-weight="bold">80 cm adâncime</text>
+    <!-- ===== P7 Top corp 2 / Bază corp 3 (în secțiune: dreptunghi 800×18) ===== -->
+    <rect x="530" y="295" width="280" height="6.3" class="pal"/>
 
-    <!-- adâncime 60 cm corp 3 — sus, deasupra -->
-    <line x1="220" y1="245" x2="280" y2="215" marker-start="url(#arr)" marker-end="url(#arr)"/>
-    <line x1="220" y1="260" x2="218" y2="242" stroke-width="0.6" stroke-dasharray="3 3"/>
-    <line x1="280" y1="200" x2="278" y2="218" stroke-width="0.6" stroke-dasharray="3 3"/>
-    <text x="120" y="225" stroke="none" font-weight="bold">60 cm adâncime</text>
+    <!-- ===== Corp 3 retras: lateralele și polițele la x mm 200-800 (60 cm), retras 200 mm de fața din față ===== -->
+    <!-- Lateralele P2 (în secțiune e dreptunghi 600×282) -->
+    <rect x="600" y="196.3" width="210" height="98.7" class="pal"/>
 
-    <!-- retragere 20 cm — sus, în față, între blat corp 2 și fața corp 3 -->
-    <line x1="200" y1="378" x2="220" y2="358" marker-start="url(#arr)" marker-end="url(#arr)"/>
-    <text x="80" y="380" stroke="none" font-weight="bold">retras 20 cm</text>
+    <!-- Polițe P8 (linii orizontale prin corp 3) -->
+    <rect x="600" y="262.6" width="210" height="6.3" fill="#fff" stroke="#5a3a1c" stroke-width="0.6"/>
+    <rect x="600" y="229.7" width="210" height="6.3" fill="#fff" stroke="#5a3a1c" stroke-width="0.6"/>
+
+    <!-- P9 Top corp 3 -->
+    <rect x="600" y="190" width="210" height="6.3" class="pal"/>
+
+    <!-- ===== Linie întreruptă pt fața corp 1+2 sub corp 3 ===== -->
+    <line x1="530" y1="190" x2="530" y2="295" class="hidden"/>
+    <line x1="530" y1="190" x2="600" y2="190" class="hidden"/>
+
+    <!-- ===== Etichete piese ===== -->
+    <g>
+      <circle cx="820" cy="500" r="8" class="part-id-bg"/>
+      <text x="820" y="503" class="part-id">P1</text>
+
+      <circle cx="820" cy="245" r="8" class="part-id-bg"/>
+      <text x="820" y="248" class="part-id">P2</text>
+
+      <circle cx="670" cy="725" r="8" class="part-id-bg"/>
+      <text x="670" y="728" class="part-id">P3</text>
+
+      <circle cx="670" cy="620" r="8" class="part-id-bg"/>
+      <text x="670" y="623" class="part-id">P4</text>
+
+      <circle cx="670" cy="478" r="8" class="part-id-bg"/>
+      <text x="670" y="481" class="part-id">P5</text>
+
+      <circle cx="670" cy="425" r="8" class="part-id-bg"/>
+      <text x="670" y="428" class="part-id">P6</text>
+
+      <circle cx="670" cy="312" r="8" class="part-id-bg"/>
+      <text x="670" y="315" class="part-id">P7</text>
+
+      <circle cx="710" cy="247" r="8" class="part-id-bg"/>
+      <text x="710" y="250" class="part-id">P8</text>
+
+      <circle cx="710" cy="207" r="8" class="part-id-bg"/>
+      <text x="710" y="210" class="part-id">P9</text>
+
+      <circle cx="525" cy="500" r="8" class="part-id-bg"/>
+      <text x="525" y="503" class="part-id">P10</text>
+
+      <circle cx="660" cy="495" r="8" class="part-id-bg"/>
+      <text x="660" y="498" class="part-id">P11</text>
+    </g>
+
+    <!-- ===== COTE adâncime (jos) ===== -->
+    <g>
+      <!-- adâncime 800 corp 1+2 -->
+      <line x1="530" y1="775" x2="530" y2="755" class="dim-ext"/>
+      <line x1="810" y1="775" x2="810" y2="755" class="dim-ext"/>
+      <line x1="530" y1="770" x2="810" y2="770" class="dim" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+      <text x="670" y="785" class="dim-text">800  (adâncime corp 1+2)</text>
+
+      <!-- adâncime 600 corp 3 -->
+      <line x1="600" y1="170" x2="600" y2="186" class="dim-ext"/>
+      <line x1="810" y1="170" x2="810" y2="186" class="dim-ext"/>
+      <line x1="600" y1="175" x2="810" y2="175" class="dim" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+      <text x="705" y="166" class="dim-text">600  (adâncime corp 3)</text>
+
+      <!-- retragere 200 -->
+      <line x1="530" y1="320" x2="530" y2="295" class="dim-ext"/>
+      <line x1="600" y1="320" x2="600" y2="295" class="dim-ext"/>
+      <line x1="530" y1="312" x2="600" y2="312" class="dim" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+      <text x="565" y="335" class="dim-text">200 retras</text>
+    </g>
+
+    <!-- ===== Cote înălțime pe partea dreaptă ===== -->
+    <g>
+      <line x1="855" y1="715" x2="885" y2="715" class="dim-ext"/>
+      <line x1="855" y1="750" x2="885" y2="750" class="dim-ext"/>
+      <line x1="880" y1="715" x2="880" y2="750" class="dim" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+      <text x="890" y="736" class="dim-text" text-anchor="start">100</text>
+
+      <line x1="855" y1="463" x2="885" y2="463" class="dim-ext"/>
+      <line x1="880" y1="463" x2="880" y2="715" class="dim" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+      <text x="890" y="592" class="dim-text" text-anchor="start">700</text>
+
+      <line x1="855" y1="295" x2="885" y2="295" class="dim-ext"/>
+      <line x1="880" y1="295" x2="880" y2="463" class="dim" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+      <text x="890" y="382" class="dim-text" text-anchor="start">500</text>
+
+      <line x1="855" y1="190" x2="885" y2="190" class="dim-ext"/>
+      <line x1="880" y1="190" x2="880" y2="295" class="dim" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+      <text x="890" y="245" class="dim-text" text-anchor="start">300</text>
+    </g>
   </g>
 
-  <!-- etichete pe corpuri -->
-  <g font-size="12" fill="#333">
-    <text x="290" y="485" text-anchor="middle" font-weight="bold" fill="#fff">SERTAR</text>
-    <text x="290" y="565" text-anchor="middle">raft deschis</text>
-    <text x="300" y="415" text-anchor="middle">raft deschis</text>
-    <text x="320" y="305" text-anchor="middle">raft retras</text>
+  <!--
+    ===== PANOU 3: VEDERE DE SUS / PLAN =====
+    Origine top-left la (160, 850). Scară 0.35 px/mm.
+    Total figure (corp 1+2 vizibil): 600 mm × 800 mm → 210 × 280 px
+    mm→px:  x = 160 + 0.35*mm,  z = 850 + 0.35*mm  (z merge în spate, în jos pe ecran)
+    Corp 3 (60 cm) e proiectat punctat la z mm 200..800
+  -->
+  <g id="plan-view">
+    <text x="80" y="830" class="panel-title">3. VEDERE DE SUS / PLAN</text>
+    <rect x="40" y="810" width="440" height="350" class="frame"/>
+
+    <!-- Conturul corp 1+2 (linie continuă) -->
+    <rect x="160" y="850" width="210" height="280" fill="none" stroke="#000" stroke-width="1.2"/>
+
+    <!-- Lateralele (grosime 18 mm) — vedere de sus -->
+    <rect x="160" y="850" width="6.3" height="280" class="pal"/>
+    <rect x="363.7" y="850" width="6.3" height="280" class="pal"/>
+
+    <!-- Polița P5 (cea de la 800 mm pe verticală, cea care se vede pe vederea de sus) -->
+    <!-- de fapt vedem polița cea mai de sus la nivelul "tăieturii" — dar pt simplitate desenăm interiorul -->
+    <rect x="166.3" y="850" width="197.4" height="280" fill="#fdf6e3" stroke="#5a3a1c" stroke-width="0.4"/>
+
+    <!-- Conturul corp 3 retras (linie întreruptă, retras 200 mm) -->
+    <rect x="160" y="920" width="210" height="210" fill="none" class="hidden"/>
+
+    <!-- Front corp 3 (linie întreruptă mai vizibilă) -->
+    <line x1="160" y1="920" x2="370" y2="920" stroke="#1565c0" stroke-width="1" stroke-dasharray="6 3"/>
+    <text x="265" y="915" font-size="9" fill="#1565c0" text-anchor="middle">faţa corp 3 (retras)</text>
+
+    <!-- Cote -->
+    <g>
+      <!-- lățime 600 (sus) -->
+      <line x1="160" y1="830" x2="160" y2="848" class="dim-ext"/>
+      <line x1="370" y1="830" x2="370" y2="848" class="dim-ext"/>
+      <line x1="160" y1="836" x2="370" y2="836" class="dim" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+      <text x="265" y="828" class="dim-text">600</text>
+
+      <!-- adâncime 800 (dreapta) -->
+      <line x1="385" y1="850" x2="395" y2="850" class="dim-ext"/>
+      <line x1="385" y1="1130" x2="395" y2="1130" class="dim-ext"/>
+      <line x1="390" y1="850" x2="390" y2="1130" class="dim" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+      <text x="405" y="993" class="dim-text" text-anchor="start">800</text>
+
+      <!-- adâncime corp 3 retras 600 (stânga) -->
+      <line x1="140" y1="920" x2="155" y2="920" class="dim-ext"/>
+      <line x1="140" y1="1130" x2="155" y2="1130" class="dim-ext"/>
+      <line x1="145" y1="920" x2="145" y2="1130" class="dim" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+      <text x="125" y="1028" class="dim-text" text-anchor="end">600</text>
+
+      <!-- retragere 200 -->
+      <line x1="140" y1="850" x2="155" y2="850" class="dim-ext"/>
+      <line x1="125" y1="885" class="dim-ext"/>
+      <line x1="145" y1="850" x2="145" y2="920" class="dim" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+      <text x="125" y="888" class="dim-text" text-anchor="end">200</text>
+    </g>
+
+    <!-- Indicator FAȚĂ -->
+    <text x="265" y="1155" font-size="10" font-style="italic" fill="#333" text-anchor="middle">FAȚĂ ↑ (orientare spre cameră)</text>
   </g>
 
-  <!-- legendă mică jos -->
-  <g font-size="12" fill="#555">
-    <text x="20" y="690">• fără uși · fără spate · 3 corpuri suprapuse</text>
-    <text x="20" y="708">• cote în cm · vedere izometrică (scară 1 cm = 2 px)</text>
+  <!--
+    ===== PANOU 4: LISTA DE DEBITARE =====
+    Tabel cu toate piesele. Coloane: Cod | Denumire | Buc | Lung × Lăț (mm) | Gros | Cant ABS
+  -->
+  <g id="cutting-list">
+    <text x="990" y="100" class="panel-title">4. LISTĂ DEBITARE  (toate cotele în mm)</text>
+    <rect x="970" y="80" width="710" height="900" class="frame"/>
+
+    <!-- Header tabel -->
+    <g transform="translate(990, 120)">
+      <rect x="0" y="0" width="670" height="26" fill="#e8e2d6" stroke="#333" stroke-width="0.5"/>
+      <line x1="50" y1="0" x2="50" y2="26" stroke="#333" stroke-width="0.5"/>
+      <line x1="280" y1="0" x2="280" y2="26" stroke="#333" stroke-width="0.5"/>
+      <line x1="330" y1="0" x2="330" y2="26" stroke="#333" stroke-width="0.5"/>
+      <line x1="470" y1="0" x2="470" y2="26" stroke="#333" stroke-width="0.5"/>
+      <line x1="530" y1="0" x2="530" y2="26" stroke="#333" stroke-width="0.5"/>
+      <text x="25" y="17" class="table-th" text-anchor="middle">Cod</text>
+      <text x="165" y="17" class="table-th" text-anchor="middle">Denumire</text>
+      <text x="305" y="17" class="table-th" text-anchor="middle">Buc</text>
+      <text x="400" y="17" class="table-th" text-anchor="middle">Lungime × Lățime</text>
+      <text x="500" y="17" class="table-th" text-anchor="middle">Gros</text>
+      <text x="600" y="17" class="table-th" text-anchor="middle">Cant ABS</text>
+    </g>
+
+    <!-- Rânduri tabel -->
+    <g transform="translate(990, 146)" font-family="Arial, sans-serif">
+      <!-- Generăm 14 rânduri, fiecare 30 px înălțime -->
+      <!-- Linii verticale pentru toate rândurile -->
+      <line x1="0" y1="0" x2="0" y2="450" stroke="#333" stroke-width="0.5"/>
+      <line x1="50" y1="0" x2="50" y2="450" stroke="#333" stroke-width="0.5"/>
+      <line x1="280" y1="0" x2="280" y2="450" stroke="#333" stroke-width="0.5"/>
+      <line x1="330" y1="0" x2="330" y2="450" stroke="#333" stroke-width="0.5"/>
+      <line x1="470" y1="0" x2="470" y2="450" stroke="#333" stroke-width="0.5"/>
+      <line x1="530" y1="0" x2="530" y2="450" stroke="#333" stroke-width="0.5"/>
+      <line x1="670" y1="0" x2="670" y2="450" stroke="#333" stroke-width="0.5"/>
+
+      <!-- P1 -->
+      <line x1="0" y1="30" x2="670" y2="30" class="table-row-line"/>
+      <text x="25" y="20" class="table-td" text-anchor="middle" fill="#1565c0" font-weight="bold">P1</text>
+      <text x="60" y="20" class="table-td">Laterală corp 1+2 (continuă)</text>
+      <text x="305" y="20" class="table-td" text-anchor="middle">2</text>
+      <text x="400" y="20" class="table-td" text-anchor="middle">1200 × 800</text>
+      <text x="500" y="20" class="table-td" text-anchor="middle">18</text>
+      <text x="600" y="20" class="table-td" text-anchor="middle">2 muchii (front + sus)</text>
+
+      <!-- P2 -->
+      <line x1="0" y1="60" x2="670" y2="60" class="table-row-line"/>
+      <text x="25" y="50" class="table-td" text-anchor="middle" fill="#1565c0" font-weight="bold">P2</text>
+      <text x="60" y="50" class="table-td">Laterală corp 3</text>
+      <text x="305" y="50" class="table-td" text-anchor="middle">2</text>
+      <text x="400" y="50" class="table-td" text-anchor="middle">300 × 600</text>
+      <text x="500" y="50" class="table-td" text-anchor="middle">18</text>
+      <text x="600" y="50" class="table-td" text-anchor="middle">2 muchii (front + sus)</text>
+
+      <!-- P3 -->
+      <line x1="0" y1="90" x2="670" y2="90" class="table-row-line"/>
+      <text x="25" y="80" class="table-td" text-anchor="middle" fill="#1565c0" font-weight="bold">P3</text>
+      <text x="60" y="80" class="table-td">Poliță jos corp 1</text>
+      <text x="305" y="80" class="table-td" text-anchor="middle">1</text>
+      <text x="400" y="80" class="table-td" text-anchor="middle">564 × 800</text>
+      <text x="500" y="80" class="table-td" text-anchor="middle">18</text>
+      <text x="600" y="80" class="table-td" text-anchor="middle">1 muchie (front)</text>
+
+      <!-- P4 -->
+      <line x1="0" y1="120" x2="670" y2="120" class="table-row-line"/>
+      <text x="25" y="110" class="table-td" text-anchor="middle" fill="#1565c0" font-weight="bold">P4</text>
+      <text x="60" y="110" class="table-td">Poliță sub sertar</text>
+      <text x="305" y="110" class="table-td" text-anchor="middle">1</text>
+      <text x="400" y="110" class="table-td" text-anchor="middle">564 × 800</text>
+      <text x="500" y="110" class="table-td" text-anchor="middle">18</text>
+      <text x="600" y="110" class="table-td" text-anchor="middle">1 muchie (front)</text>
+
+      <!-- P5 -->
+      <line x1="0" y1="150" x2="670" y2="150" class="table-row-line"/>
+      <text x="25" y="140" class="table-td" text-anchor="middle" fill="#1565c0" font-weight="bold">P5</text>
+      <text x="60" y="140" class="table-td">Poliță deasupra sertar</text>
+      <text x="305" y="140" class="table-td" text-anchor="middle">1</text>
+      <text x="400" y="140" class="table-td" text-anchor="middle">564 × 800</text>
+      <text x="500" y="140" class="table-td" text-anchor="middle">18</text>
+      <text x="600" y="140" class="table-td" text-anchor="middle">1 muchie (front)</text>
+
+      <!-- P6 -->
+      <line x1="0" y1="180" x2="670" y2="180" class="table-row-line"/>
+      <text x="25" y="170" class="table-td" text-anchor="middle" fill="#1565c0" font-weight="bold">P6</text>
+      <text x="60" y="170" class="table-td">Polițe corp 2</text>
+      <text x="305" y="170" class="table-td" text-anchor="middle">2</text>
+      <text x="400" y="170" class="table-td" text-anchor="middle">564 × 800</text>
+      <text x="500" y="170" class="table-td" text-anchor="middle">18</text>
+      <text x="600" y="170" class="table-td" text-anchor="middle">1 muchie/buc (front)</text>
+
+      <!-- P7 -->
+      <line x1="0" y1="210" x2="670" y2="210" class="table-row-line"/>
+      <text x="25" y="200" class="table-td" text-anchor="middle" fill="#1565c0" font-weight="bold">P7</text>
+      <text x="60" y="200" class="table-td">Top corp 2 / Bază corp 3</text>
+      <text x="305" y="200" class="table-td" text-anchor="middle">1</text>
+      <text x="400" y="200" class="table-td" text-anchor="middle">600 × 800</text>
+      <text x="500" y="200" class="table-td" text-anchor="middle">18</text>
+      <text x="600" y="200" class="table-td" text-anchor="middle">3 muchii (front + 2 lat.)</text>
+
+      <!-- P8 -->
+      <line x1="0" y1="240" x2="670" y2="240" class="table-row-line"/>
+      <text x="25" y="230" class="table-td" text-anchor="middle" fill="#1565c0" font-weight="bold">P8</text>
+      <text x="60" y="230" class="table-td">Polițe corp 3</text>
+      <text x="305" y="230" class="table-td" text-anchor="middle">2</text>
+      <text x="400" y="230" class="table-td" text-anchor="middle">564 × 600</text>
+      <text x="500" y="230" class="table-td" text-anchor="middle">18</text>
+      <text x="600" y="230" class="table-td" text-anchor="middle">1 muchie/buc (front)</text>
+
+      <!-- P9 -->
+      <line x1="0" y1="270" x2="670" y2="270" class="table-row-line"/>
+      <text x="25" y="260" class="table-td" text-anchor="middle" fill="#1565c0" font-weight="bold">P9</text>
+      <text x="60" y="260" class="table-td">Top corp 3</text>
+      <text x="305" y="260" class="table-td" text-anchor="middle">1</text>
+      <text x="400" y="260" class="table-td" text-anchor="middle">600 × 600</text>
+      <text x="500" y="260" class="table-td" text-anchor="middle">18</text>
+      <text x="600" y="260" class="table-td" text-anchor="middle">3 muchii (front + 2 lat.)</text>
+
+      <!-- P10 -->
+      <line x1="0" y1="300" x2="670" y2="300" class="table-row-line"/>
+      <text x="25" y="290" class="table-td" text-anchor="middle" fill="#1565c0" font-weight="bold">P10</text>
+      <text x="60" y="290" class="table-td">Front sertar</text>
+      <text x="305" y="290" class="table-td" text-anchor="middle">1</text>
+      <text x="400" y="290" class="table-td" text-anchor="middle">564 × 150</text>
+      <text x="500" y="290" class="table-td" text-anchor="middle">18</text>
+      <text x="600" y="290" class="table-td" text-anchor="middle">4 muchii (perimetru)</text>
+
+      <!-- P11 -->
+      <line x1="0" y1="330" x2="670" y2="330" class="table-row-line"/>
+      <text x="25" y="320" class="table-td" text-anchor="middle" fill="#1565c0" font-weight="bold">P11</text>
+      <text x="60" y="320" class="table-td">Laterale sertar</text>
+      <text x="305" y="320" class="table-td" text-anchor="middle">2</text>
+      <text x="400" y="320" class="table-td" text-anchor="middle">750 × 130</text>
+      <text x="500" y="320" class="table-td" text-anchor="middle">18</text>
+      <text x="600" y="320" class="table-td" text-anchor="middle">1 muchie/buc (sus)</text>
+
+      <!-- P12 -->
+      <line x1="0" y1="360" x2="670" y2="360" class="table-row-line"/>
+      <text x="25" y="350" class="table-td" text-anchor="middle" fill="#1565c0" font-weight="bold">P12</text>
+      <text x="60" y="350" class="table-td">Spate sertar</text>
+      <text x="305" y="350" class="table-td" text-anchor="middle">1</text>
+      <text x="400" y="350" class="table-td" text-anchor="middle">528 × 130</text>
+      <text x="500" y="350" class="table-td" text-anchor="middle">18</text>
+      <text x="600" y="350" class="table-td" text-anchor="middle">1 muchie (sus)</text>
+
+      <!-- P13 -->
+      <line x1="0" y1="390" x2="670" y2="390" class="table-row-line"/>
+      <text x="25" y="380" class="table-td" text-anchor="middle" fill="#1565c0" font-weight="bold">P13</text>
+      <text x="60" y="380" class="table-td">Fund sertar (HDF/PFL)</text>
+      <text x="305" y="380" class="table-td" text-anchor="middle">1</text>
+      <text x="400" y="380" class="table-td" text-anchor="middle">564 × 750</text>
+      <text x="500" y="380" class="table-td" text-anchor="middle">4</text>
+      <text x="600" y="380" class="table-td" text-anchor="middle">—</text>
+
+      <!-- P14 -->
+      <line x1="0" y1="420" x2="670" y2="420" class="table-row-line"/>
+      <line x1="0" y1="450" x2="670" y2="450" class="table-row-line"/>
+      <text x="25" y="410" class="table-td" text-anchor="middle" fill="#1565c0" font-weight="bold">P14</text>
+      <text x="60" y="410" class="table-td">Picioare reglabile (accesoriu)</text>
+      <text x="305" y="410" class="table-td" text-anchor="middle">4</text>
+      <text x="400" y="410" class="table-td" text-anchor="middle">H 100 (reglabil)</text>
+      <text x="500" y="410" class="table-td" text-anchor="middle">—</text>
+      <text x="600" y="410" class="table-td" text-anchor="middle">—</text>
+
+      <!-- ACCESORII -->
+      <text x="25" y="445" class="table-td" text-anchor="middle" fill="#1565c0" font-weight="bold">A1</text>
+      <text x="60" y="445" class="table-td">Glisieră telescopică sertar</text>
+      <text x="305" y="445" class="table-td" text-anchor="middle">1 set</text>
+      <text x="400" y="445" class="table-td" text-anchor="middle">L = 750</text>
+      <text x="500" y="445" class="table-td" text-anchor="middle">—</text>
+      <text x="600" y="445" class="table-td" text-anchor="middle">extragere totală</text>
+    </g>
+
+    <!-- ===== NOTE TEHNICE ===== -->
+    <g transform="translate(990, 640)">
+      <text x="0" y="0" class="panel-title" font-size="13">NOTE TEHNICE</text>
+      <text x="0" y="22" class="label">• Toate plăcile PAL melaminat 18 mm, exceptând P13 (fund sertar HDF 4 mm).</text>
+      <text x="0" y="40" class="label">• Cant ABS 0.4 mm pe toate muchiile vizibile (frontale + laterale exterioare); muchiile ascunse rămân netratate.</text>
+      <text x="0" y="58" class="label">• Lateralele P1 sunt continui prin corpurile 1 și 2 (1200 mm) — reduce material și mărește rigiditatea.</text>
+      <text x="0" y="76" class="label">• Asamblare: dibluri Ø8 × 30 mm pentru poziționare + euroșuruburi 6.3 × 50 mm la îmbinări.</text>
+      <text x="0" y="94" class="label">• Polițe corp 2 și 3: poziționate echidistant; pot folosi suporți pentru polițe cu prindere în lateralele cabinetului.</text>
+      <text x="0" y="112" class="label">• Sertar pe glisiere telescopice cu extragere totală L = 750 mm; capacitate ≥ 25 kg.</text>
+      <text x="0" y="130" class="label">• Picioare reglabile H 100 mm la baza corpului 1 (reglaj ±20 mm pentru nivelare pe podea neuniformă).</text>
+      <text x="0" y="148" class="label">• Toleranță cote: ±1 mm. Lățimile polițelor (564 = 600 − 2×18) presupun îmbinare în interior, între lateralele cabinetului.</text>
+      <text x="0" y="166" class="label">• Fără spate la niciun corp; fără uși; fără soclu mascat.</text>
+      <text x="0" y="184" class="label">• Înălțime totală asamblu (fără picioare) = 1500 mm. Cu picioare reglate la 100 mm = 1600 mm de la podea.</text>
+      <text x="0" y="202" class="label">• La montaj: fixați ansamblul de perete prin colțar metalic în partea de sus a corpului 3, pentru stabilitate.</text>
+    </g>
+
+    <!-- Legenda hașurii -->
+    <g transform="translate(990, 870)">
+      <text x="0" y="0" class="panel-title" font-size="13">LEGENDĂ</text>
+      <rect x="0" y="12" width="20" height="12" class="pal"/>
+      <text x="28" y="22" class="label">Secțiune prin PAL (hașură 45°)</text>
+      <line x1="180" y1="18" x2="220" y2="18" stroke="#000" stroke-width="1.2"/>
+      <text x="228" y="22" class="label">Linie continuă = contur vizibil</text>
+      <line x1="380" y1="18" x2="420" y2="18" class="hidden"/>
+      <text x="428" y="22" class="label">Linie întreruptă = contur ascuns / retras</text>
+      <line x1="0" y1="42" x2="40" y2="42" class="dim" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+      <text x="48" y="46" class="label">Cotă (mm)</text>
+      <circle cx="180" cy="42" r="6" class="part-id-bg"/>
+      <text x="180" cy="45" y="45" class="part-id">Pn</text>
+      <text x="200" y="46" class="label">Cod piesă (vezi tabel)</text>
+    </g>
   </g>
 </svg>
