@@ -2,13 +2,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 850" font-family="Arial, sans-serif">
   <defs>
     <style>
-      .top   { fill: #d9b282; stroke: #5a3a1c; stroke-width: 0.8; }
-      .front { fill: #b8895a; stroke: #5a3a1c; stroke-width: 0.8; }
-      .side  { fill: #8c5e36; stroke: #5a3a1c; stroke-width: 0.8; }
+      .top    { fill: #d9b282; stroke: #5a3a1c; stroke-width: 0.8; }
+      .front  { fill: #b8895a; stroke: #5a3a1c; stroke-width: 0.8; }
+      .side   { fill: #8c5e36; stroke: #5a3a1c; stroke-width: 0.8; }
       .drawer { fill: #a67442; stroke: #4a2e16; stroke-width: 1; }
-      .ortho { fill: #efe2cf; stroke: #5a3a1c; stroke-width: 1; }
       .ortho-shelf { fill: #c69a66; stroke: #5a3a1c; stroke-width: 0.8; }
       .ortho-drawer { fill: #a67442; stroke: #4a2e16; stroke-width: 1; }
+      .ortho-drawer-side { fill: #8c5e36; stroke: #4a2e16; stroke-width: 0.8; }
       .dim { stroke: #c0392b; stroke-width: 0.8; fill: none; }
       .dim-ext { stroke: #c0392b; stroke-width: 0.4; stroke-dasharray: 3 2; fill: none; }
       .dim-text { fill: #c0392b; font-size: 12px; font-weight: bold; text-anchor: middle; }
@@ -25,7 +25,7 @@
 
   <!-- ANTET -->
   <text x="600" y="35" text-anchor="middle" font-size="20" font-weight="bold" fill="#1a1a1a">Rafturi bucătărie — desen 3D + vederi față/lateral</text>
-  <text x="600" y="55" text-anchor="middle" font-size="11" fill="#666">Cote în cm  ·  Fără uși  ·  Fără spate  ·  Sertar la mijloc</text>
+  <text x="600" y="55" text-anchor="middle" font-size="11" fill="#666">Cote în cm  ·  Doar polițe orizontale  ·  Fără pereți laterali (cu excepția sertarului)  ·  Fără spate</text>
 
   <!--
     ============ PANOU STÂNGA: VEDERE 3D IZOMETRICĂ ============
@@ -37,32 +37,32 @@
   <line x1="60" y1="700" x2="500" y2="700" stroke="#000" stroke-width="0.5"/>
   <text x="510" y="704" font-size="9" fill="#888">podea</text>
 
-  <!-- LEFT lower side panel (0..2, 0..135, 0..50) -->
-  <polygon class="top"   points="200,295 206,295 281,220 275,220"/>
-  <polygon class="front" points="200,700 206,700 206,295 200,295"/>
-  <polygon class="side"  points="206,700 281,625 281,220 206,295"/>
+  <!-- 1. FLOOR (poliță jos, 60 × 50, y=0..2) -->
+  <polygon class="top"   points="200,694 380,694 455,619 275,619"/>
+  <polygon class="front" points="200,700 380,700 380,694 200,694"/>
+  <polygon class="side"  points="380,700 455,625 455,619 380,694"/>
 
-  <!-- RIGHT lower side panel (58..60, 0..135, 0..50) -->
-  <polygon class="top"   points="374,295 380,295 455,220 449,220"/>
-  <polygon class="front" points="374,700 380,700 380,295 374,295"/>
-  <polygon class="side"  points="380,700 455,625 455,220 380,295"/>
+  <!-- 2. TOP RAFT 1 (y=50..52) -->
+  <polygon class="top"   points="200,544 380,544 455,469 275,469"/>
+  <polygon class="front" points="200,550 380,550 380,544 200,544"/>
+  <polygon class="side"  points="380,550 455,475 455,469 380,544"/>
 
-  <!-- Floor board (2..58, 0..2, 0..50) -->
-  <polygon class="top"   points="206,694 374,694 449,619 281,619"/>
-  <polygon class="front" points="206,700 374,700 374,694 206,694"/>
-  <polygon class="side"  points="374,700 449,625 449,619 374,694"/>
+  <!-- 3. TOP RAFT 2 (y=70..72) -->
+  <polygon class="top"   points="200,484 380,484 455,409 275,409"/>
+  <polygon class="front" points="200,490 380,490 380,484 200,484"/>
+  <polygon class="side"  points="380,490 455,415 455,409 380,484"/>
 
-  <!-- Shelf top raft 1 (2..58, 50..52, 0..50) -->
-  <polygon class="top"   points="206,544 374,544 449,469 281,469"/>
-  <polygon class="front" points="206,550 374,550 374,544 206,544"/>
-  <polygon class="side"  points="374,550 449,475 449,469 374,544"/>
+  <!-- 4. PERETE STÂNGA SERTAR (x=0..2, y=72..90, z=0..50) -->
+  <polygon class="top"   points="200,430 206,430 281,355 275,355"/>
+  <polygon class="front" points="200,484 206,484 206,430 200,430"/>
+  <polygon class="side"  points="206,484 281,409 281,355 206,430"/>
 
-  <!-- Shelf top raft 2 / bottom sertar (2..58, 70..72, 0..50) -->
-  <polygon class="top"   points="206,484 374,484 449,409 281,409"/>
-  <polygon class="front" points="206,490 374,490 374,484 206,484"/>
-  <polygon class="side"  points="374,490 449,415 449,409 374,484"/>
+  <!-- 5. PERETE DREAPTA SERTAR (x=58..60, y=72..90, z=0..50) -->
+  <polygon class="top"   points="374,430 380,430 455,355 449,355"/>
+  <polygon class="front" points="374,484 380,484 380,430 374,430"/>
+  <polygon class="side"  points="380,484 455,409 455,355 380,430"/>
 
-  <!-- Drawer front (2..58, 70..90, 0..2) -->
+  <!-- 6. SERTAR FRONT (x=2..58, y=70..90, z=0..2) — față mai înaltă (20 cm) ce acoperă marginea polițelor adiacente -->
   <polygon class="top"     points="206,430 374,430 377,427 209,427"/>
   <polygon class="drawer"  points="206,490 374,490 374,430 206,430"/>
   <polygon class="side"    points="374,490 377,487 377,427 374,430"/>
@@ -70,100 +70,82 @@
   <rect x="265" y="453" width="50" height="6" rx="2" fill="#888" stroke="#444" stroke-width="0.5"/>
   <text x="290" y="475" font-size="9" fill="#fff" text-anchor="middle">SERTAR</text>
 
-  <!-- Shelf above drawer / bottom raft 3 (2..58, 90..92, 0..50) -->
-  <polygon class="top"   points="206,424 374,424 449,349 281,349"/>
-  <polygon class="front" points="206,430 374,430 374,424 206,424"/>
-  <polygon class="side"  points="374,430 449,355 449,349 374,424"/>
+  <!-- 7. TOP SERTAR / BAZA RAFT 3 (y=90..92) -->
+  <polygon class="top"   points="200,424 380,424 455,349 275,349"/>
+  <polygon class="front" points="200,430 380,430 380,424 200,424"/>
+  <polygon class="side"  points="380,430 455,355 455,349 380,424"/>
 
-  <!-- Shelf top raft 3 (2..58, 135..137, 0..50) -->
-  <polygon class="top"   points="206,289 374,289 449,214 281,214"/>
-  <polygon class="front" points="206,295 374,295 374,289 206,289"/>
-  <polygon class="side"  points="374,295 449,220 449,214 374,289"/>
+  <!-- 8. TOP RAFT 3 (y=135..137) -->
+  <polygon class="top"   points="200,289 380,289 455,214 275,214"/>
+  <polygon class="front" points="200,295 380,295 380,289 200,289"/>
+  <polygon class="side"  points="380,295 455,220 455,214 380,289"/>
 
-  <!-- LEFT upper side panel RETRAS (0..2, 137..175, 10..50) -->
-  <polygon class="top"   points="215,160 221,160 281,100 275,100"/>
-  <polygon class="front" points="215,286 221,286 221,160 215,160"/>
-  <polygon class="side"  points="221,286 281,226 281,100 221,160"/>
+  <!-- 9. TOP RAFT 4 RETRAS / CAPAC (y=175..177, z=10..50, adâncime 40) -->
+  <polygon class="top"   points="215,154 395,154 455,94 275,94"/>
+  <polygon class="front" points="215,160 395,160 395,154 215,154"/>
+  <polygon class="side"  points="395,160 455,100 455,94 395,154"/>
 
-  <!-- RIGHT upper side panel RETRAS (58..60, 137..175, 10..50) -->
-  <polygon class="top"   points="389,160 395,160 455,100 449,100"/>
-  <polygon class="front" points="389,286 395,286 395,160 389,160"/>
-  <polygon class="side"  points="395,286 455,226 455,100 395,160"/>
-
-  <!-- Top closer raft 4 (2..58, 175..177, 10..50) -->
-  <polygon class="top"   points="221,139 389,139 449,94 281,94"/>
-  <polygon class="front" points="221,145 389,145 389,139 221,139"/>
-  <polygon class="side"  points="389,145 449,100 449,94 389,139"/>
-
-  <!-- Etichete pe corpuri -->
+  <!-- Etichete pe rafturi -->
   <g font-size="10" fill="#3a2410">
-    <text x="290" y="630" text-anchor="middle">raft 1 (deschis)</text>
-    <text x="290" y="525" text-anchor="middle">raft 2</text>
-    <text x="290" y="408" text-anchor="middle">raft 3 (deasupra sertarului)</text>
-    <text x="290" y="245" text-anchor="middle" fill="#fff" font-weight="bold">raft 4 (RETRAS)</text>
+    <text x="290" y="630" text-anchor="middle" font-style="italic">raft 1 (deschis)</text>
+    <text x="290" y="525" text-anchor="middle" font-style="italic">raft 2</text>
+    <text x="290" y="408" text-anchor="middle" font-style="italic">raft 3</text>
+    <text x="290" y="265" text-anchor="middle" font-style="italic" fill="#c0392b">raft 4 (retras)</text>
   </g>
 
   <!--
     ============ PANOU DREAPTA-SUS: VEDERE DIN FAȚĂ (orthographic) ============
     Origine bottom-left la (650, 720). Scară 2.7 px/cm.
     Total: 60 × 177 cm → 162 × 478 px
-    mm→px:  x = 650 + 2.7*x_cm,  y = 720 - 2.7*y_cm
+    px = 650 + 2.7*x_cm,  py = 720 - 2.7*y_cm
   -->
   <text x="730" y="90" class="panel-title">VEDERE DIN FAȚĂ</text>
   <rect x="600" y="70" width="280" height="730" class="frame"/>
   <line x1="610" y1="720" x2="870" y2="720" stroke="#000" stroke-width="0.5"/>
   <text x="875" y="724" font-size="9" fill="#888">podea</text>
 
-  <!-- Conturul cabinetului din față: 60 wide × 177 tall (cm) -->
-  <!-- Lateralele complet vizibile (din față) -->
-  <rect x="650" y="242.1" width="5.4" height="477.9" class="ortho"/>
-  <rect x="806.6" y="242.1" width="5.4" height="477.9" class="ortho"/>
-  <!-- Floor -->
-  <rect x="655.4" y="714.6" width="151.2" height="5.4" class="ortho-shelf"/>
-  <!-- Shelf top raft 1 (y=50..52) -->
-  <rect x="655.4" y="579.6" width="151.2" height="5.4" class="ortho-shelf"/>
-  <!-- Shelf top raft 2 (y=70..72) -->
-  <rect x="655.4" y="525.6" width="151.2" height="5.4" class="ortho-shelf"/>
-  <!-- Drawer front (y=70..90) — full visible -->
-  <rect x="655.4" y="471.6" width="151.2" height="54" class="ortho-drawer"/>
+  <!-- Polițele orizontale (6 buc, fiecare 60 cm × 2 cm) -->
+  <rect x="650" y="714.6" width="162" height="5.4" class="ortho-shelf"/>     <!-- floor y=0..2 -->
+  <rect x="650" y="580.2" width="162" height="5.4" class="ortho-shelf"/>     <!-- y=50..52 -->
+  <rect x="650" y="526.2" width="162" height="5.4" class="ortho-shelf"/>     <!-- y=70..72 -->
+  <rect x="650" y="472.2" width="162" height="5.4" class="ortho-shelf"/>     <!-- y=90..92 (top sertar) -->
+  <rect x="650" y="350.7" width="162" height="5.4" class="ortho-shelf"/>     <!-- y=135..137 -->
+  <rect x="650" y="242.7" width="162" height="5.4" class="ortho-shelf"/>     <!-- y=175..177 (top retras — la fel de lat în vederea din față) -->
+
+  <!-- Pereții laterali ai sertarului (doar pe înălțimea sertarului, x=0..2 și x=58..60) -->
+  <rect x="650" y="477.6" width="5.4" height="48" class="ortho-drawer-side"/>
+  <rect x="806.6" y="477.6" width="5.4" height="48" class="ortho-drawer-side"/>
+
+  <!-- Sertar — front (acoperă vizual zona y=70..90, 20 cm) -->
+  <rect x="655.4" y="472.2" width="151.2" height="54" class="ortho-drawer"/>
   <rect x="715" y="495" width="32" height="5" rx="2" fill="#888" stroke="#444" stroke-width="0.4"/>
   <text x="731" y="505" font-size="9" fill="#fff" text-anchor="middle">SERTAR</text>
-  <!-- Shelf above drawer / bottom raft 3 (y=90..92) -->
-  <rect x="655.4" y="471.6" width="151.2" height="5.4" class="ortho-shelf"/>
-  <!-- Shelf top raft 3 (y=135..137) -->
-  <rect x="655.4" y="350.1" width="151.2" height="5.4" class="ortho-shelf"/>
-  <!-- Top closer raft 4 (y=175..177) -->
-  <rect x="655.4" y="242.1" width="151.2" height="5.4" class="ortho-shelf"/>
-  <!-- Indicator retras: linie întreruptă unde corpul de sus e mai îngust pe adâncime (din față pare la fel — adăugăm doar o adnotare) -->
-  <text x="730" y="295" font-size="9" fill="#c0392b" text-anchor="middle" font-style="italic">↑ raft 4 retras în adâncime</text>
+
+  <!-- Indicator vizual: corpul superior e retras în adâncime (nu se vede din față, doar adnotare) -->
+  <text x="731" y="290" font-size="9" fill="#c0392b" text-anchor="middle" font-style="italic">↑ raft 4 retras 10 cm în adâncime</text>
 
   <!-- Cote înălțimi (pe partea dreaptă) -->
   <g>
-    <!-- raft 1 = 50 cm -->
     <line x1="825" y1="720" x2="845" y2="720" class="dim-ext"/>
     <line x1="825" y1="585" x2="845" y2="585" class="dim-ext"/>
     <line x1="840" y1="720" x2="840" y2="585" class="dim" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
-    <text x="848" y="657" class="dim-text" text-anchor="start">50</text>
+    <text x="848" y="657" class="dim-text" text-anchor="start">50 (raft 1)</text>
 
-    <!-- raft 2 = 20 cm -->
     <line x1="825" y1="525" x2="845" y2="525" class="dim-ext"/>
     <line x1="840" y1="585" x2="840" y2="525" class="dim" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
-    <text x="848" y="557" class="dim-text" text-anchor="start">20</text>
+    <text x="848" y="557" class="dim-text" text-anchor="start">20 (raft 2)</text>
 
-    <!-- sertar = 20 cm -->
     <line x1="825" y1="471" x2="845" y2="471" class="dim-ext"/>
     <line x1="840" y1="525" x2="840" y2="471" class="dim" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
     <text x="848" y="500" class="dim-text" text-anchor="start">20 (sertar)</text>
 
-    <!-- raft 3 = 45 cm -->
     <line x1="825" y1="350" x2="845" y2="350" class="dim-ext"/>
     <line x1="840" y1="471" x2="840" y2="350" class="dim" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
-    <text x="848" y="412" class="dim-text" text-anchor="start">45</text>
+    <text x="848" y="412" class="dim-text" text-anchor="start">45 (raft 3)</text>
 
-    <!-- raft 4 retras = 40 cm -->
     <line x1="825" y1="242" x2="845" y2="242" class="dim-ext"/>
     <line x1="840" y1="350" x2="840" y2="242" class="dim" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
-    <text x="848" y="298" class="dim-text" text-anchor="start">40</text>
+    <text x="848" y="298" class="dim-text" text-anchor="start">40 (raft 4)</text>
   </g>
 
   <!-- Cota lățime 60 cm (jos) -->
@@ -184,42 +166,35 @@
 
   <!--
     ============ PANOU DREAPTA-JOS: VEDERE LATERALĂ (orthographic) ============
-    Origine bottom-left la (920, 720). Scară 2.7 px/cm.
-    Total: 50 × 177 cm → 135 × 478 px (corpul retras 40 × 40 sus)
-    Pe lateral arată adâncimile.
+    Origine bottom-left (faţa) la (920, 720). Scară 2.7 px/cm.
+    px = 920 + 2.7*z_cm  (z_cm de la 0=faţă la 50=spate)
+    py = 720 - 2.7*y_cm
+    Adâncime 50 cm: 920..1055 px
+    Adâncime 40 cm (retras 10 cm): 947..1055 px
   -->
   <text x="990" y="90" class="panel-title">VEDERE LATERALĂ</text>
   <rect x="900" y="70" width="290" height="730" class="frame"/>
   <line x1="910" y1="720" x2="1175" y2="720" stroke="#000" stroke-width="0.5"/>
   <text x="1180" y="724" font-size="9" fill="#888">podea</text>
+  <text x="920" y="775" font-size="10" fill="#333" text-anchor="middle" font-style="italic">faţă</text>
+  <text x="1055" y="775" font-size="10" fill="#333" text-anchor="middle" font-style="italic">spate</text>
 
-  <!-- Conturul cabinetului din lateral. Trebuie să aibă STEP în adâncime sus.
-       Coordonate (cm): mergem de la x_cm=0 (faţă) spre x_cm=50 (spate) pe orizontală.
-       Iar înălţime: y_cm=0..177
-       În px: x_px = 920 + 2.7*x_cm,  y_px = 720 - 2.7*y_cm
+  <!-- 5 polițe la adâncimea 50 (jos) -->
+  <rect x="920" y="714.6" width="135" height="5.4" class="ortho-shelf"/>     <!-- floor -->
+  <rect x="920" y="580.2" width="135" height="5.4" class="ortho-shelf"/>     <!-- top raft 1 -->
+  <rect x="920" y="526.2" width="135" height="5.4" class="ortho-shelf"/>     <!-- top raft 2 -->
+  <rect x="920" y="472.2" width="135" height="5.4" class="ortho-shelf"/>     <!-- top sertar -->
+  <rect x="920" y="350.7" width="135" height="5.4" class="ortho-shelf"/>     <!-- top raft 3 -->
 
-       Conturul:
-       (0, 0) → (50, 0) → (50, 177) → (10, 177) → (10, 137) → (0, 137) → (0, 0)
-  -->
-  <polygon
-    points="920,720
-            1055,720
-            1055,242
-            947,242
-            947,350
-            920,350"
-    fill="#efe2cf" stroke="#5a3a1c" stroke-width="1.2"/>
+  <!-- 1 poliță retrasă la adâncimea 40 (sus) — începe la z=10 cm -->
+  <rect x="947" y="242.7" width="108" height="5.4" class="ortho-shelf"/>     <!-- top raft 4 retras -->
 
-  <!-- Polițe orizontale văzute din lateral (linii orizontale prin contur) -->
-  <line x1="920" y1="585" x2="1055" y2="585" stroke="#5a3a1c" stroke-width="0.7"/> <!-- top raft 1 (y=50) -->
-  <line x1="920" y1="525" x2="1055" y2="525" stroke="#5a3a1c" stroke-width="0.7"/> <!-- top raft 2 (y=70) -->
-  <line x1="920" y1="471" x2="1055" y2="471" stroke="#5a3a1c" stroke-width="0.7"/> <!-- top sertar (y=90) -->
-  <line x1="920" y1="350" x2="1055" y2="350" stroke="#5a3a1c" stroke-width="0.7"/> <!-- top raft 3 (y=135) — la baza părții retrase -->
-  <line x1="947" y1="242" x2="1055" y2="242" stroke="#5a3a1c" stroke-width="0.7"/> <!-- top raft 4 (y=177) -->
+  <!-- Peretele lateral al sertarului (vizibil din lateral ca un dreptunghi 50×18) -->
+  <rect x="920" y="477.6" width="135" height="48" class="ortho-drawer-side"/>
+  <text x="987" y="505" font-size="9" fill="#fff" text-anchor="middle" font-weight="bold">PERETE SERTAR</text>
 
-  <!-- Sertar (zonă specială între y=70 și y=90) -->
-  <rect x="920" y="471" width="135" height="54" fill="#a67442" opacity="0.55" stroke="#4a2e16" stroke-width="0.6" stroke-dasharray="3 2"/>
-  <text x="987" y="502" font-size="9" fill="#3a2410" text-anchor="middle" font-style="italic">sertar (intern)</text>
+  <!-- Front sertar văzut din lateral (linie subțire la faţă) -->
+  <rect x="918" y="472.2" width="2" height="54" fill="#a67442" stroke="#4a2e16" stroke-width="0.5"/>
 
   <!-- Cote adâncimi -->
   <g>
@@ -235,14 +210,14 @@
     <line x1="947" y1="225" x2="1055" y2="225" class="dim" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
     <text x="1001" y="215" class="dim-text">40 (adâncime sus)</text>
 
-    <!-- 10 cm retragere (între faţa de jos și faţa de sus) -->
+    <!-- 10 cm retragere -->
     <line x1="920" y1="370" x2="920" y2="345" class="dim-ext"/>
     <line x1="947" y1="370" x2="947" y2="345" class="dim-ext"/>
     <line x1="920" y1="365" x2="947" y2="365" class="dim" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
     <text x="933" y="385" class="dim-text" text-anchor="middle">10 retras</text>
   </g>
 
-  <!-- Cote înălțimi pe partea dreaptă (pentru vederea laterală) -->
+  <!-- Cote înălțimi pe partea dreaptă a vederii laterale -->
   <g>
     <line x1="1080" y1="720" x2="1100" y2="720" class="dim-ext"/>
     <line x1="1080" y1="585" x2="1100" y2="585" class="dim-ext"/>
@@ -266,12 +241,9 @@
     <text x="1103" y="298" class="dim-text" text-anchor="start">40</text>
   </g>
 
-  <!-- Indicator FAȚĂ pe vederea laterală -->
-  <text x="920" y="775" font-size="10" fill="#333" text-anchor="middle" font-style="italic">faţă →</text>
-
   <!-- Note jos -->
   <g font-size="10" fill="#666">
-    <text x="40" y="825">• Cote în cm  ·  fără uși  ·  fără spate  ·  rafturi deschise (vezi prin ele)</text>
-    <text x="40" y="838">• Sertar la mijloc între raft 2 și raft 3  ·  raftul de sus (raft 4) e retras 10 cm în adâncime</text>
+    <text x="40" y="825">• Doar polițe orizontale; nu are pereți laterali pe înălțime.</text>
+    <text x="40" y="838">• Singura zonă cu închideri laterale este sertarul (pereții pentru glisiere).  ·  Cote în cm.</text>
   </g>
 </svg>
