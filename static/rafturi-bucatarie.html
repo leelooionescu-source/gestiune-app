@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<title>Rafturi bucătărie — 3D</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #1a1a1a; color: #eee; font-family: system-ui, sans-serif; overflow: hidden; }
+  #info {
+    position: absolute; top: 12px; left: 12px; padding: 12px 14px;
+    background: rgba(0,0,0,.55); border-radius: 8px; font-size: 13px; line-height: 1.5;
+    pointer-events: none; max-width: 320px;
+  }
+  #info b { color: #ffcc66; }
+  #controls {
+    position: absolute; bottom: 12px; left: 12px; padding: 10px 12px;
+    background: rgba(0,0,0,.55); border-radius: 8px; font-size: 12px; color: #bbb;
+  }
+  canvas { display: block; }
+</style>
+</head>
+<body>
+<div id="info">
+  <b>Rafturi bucătărie — desen 3D</b><br>
+  Bază: 70 cm h × 80 cm ad. (cu sertar)<br>
+  Mijloc: 50 cm h × 80 cm ad.<br>
+  Sus: retras 20 cm → 60 cm ad.<br>
+  Lățime: 100 cm · fără uși, fără spate
+</div>
+<div id="controls">Mouse stâng: rotire · Mouse dreapta: pan · Scroll: zoom</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// ------- Scenă -------
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x202024);
+
+const camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.1, 5000);
+camera.position.set(220, 180, 260);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(devicePixelRatio);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.body.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 80, 0);
+controls.enableDamping = true;
+
+// ------- Lumini -------
+scene.add(new THREE.AmbientLight(0xffffff, 0.45));
+const sun = new THREE.DirectionalLight(0xffffff, 1.0);
+sun.position.set(180, 280, 200);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.left = -300;
+sun.shadow.camera.right = 300;
+sun.shadow.camera.top = 300;
+sun.shadow.camera.bottom = -300;
+scene.add(sun);
+
+const fill = new THREE.DirectionalLight(0xffeedd, 0.25);
+fill.position.set(-200, 100, -100);
+scene.add(fill);
+
+// ------- Podea -------
+const floor = new THREE.Mesh(
+  new THREE.PlaneGeometry(800, 800),
+  new THREE.MeshStandardMaterial({ color: 0x2b2b30, roughness: 0.9 })
+);
+floor.rotation.x = -Math.PI / 2;
+floor.receiveShadow = true;
+scene.add(floor);
+
+// ------- Material lemn -------
+const woodMat = new THREE.MeshStandardMaterial({ color: 0xb8895a, roughness: 0.65, metalness: 0.05 });
+const woodMatDark = new THREE.MeshStandardMaterial({ color: 0x8c5e36, roughness: 0.7 });
+const drawerFront = new THREE.MeshStandardMaterial({ color: 0xa67442, roughness: 0.55 });
+const handleMat = new THREE.MeshStandardMaterial({ color: 0x9a9a9a, roughness: 0.3, metalness: 0.85 });
+
+// Toate dimensiunile în cm
+const W = 100;     // lățime totală
+const T = 1.8;     // grosime placă
+const D1 = 80;     // adâncime corp 1 (bază)
+const H1 = 70;     // înălțime corp 1
+const D2 = 80;     // adâncime corp 2 (mijloc)
+const H2 = 50;     // înălțime corp 2
+const D3 = 60;     // adâncime corp 3 (retras 20 cm)
+const H3 = 40;     // înălțime corp 3
+const KICK = 8;    // soclu picioruse
+const DRAWER_H = 18;
+
+// helper: paralelipiped centrat pe X, sprijinit pe baza Y
+function box(w, h, d, mat, x, y, z) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  m.position.set(x, y + h/2, z);
+  m.castShadow = true;
+  m.receiveShadow = true;
+  return m;
+}
+
+// === CORP 1 — bază: 70 h × 80 d, cu sertar sus + raft deschis ===
+const g1 = new THREE.Group();
+// soclu (4 picioruse)
+const footW = 6, footD = 6;
+[[-W/2 + footW/2, KICK/2, -D1/2 + footD/2],
+ [ W/2 - footW/2, KICK/2, -D1/2 + footD/2],
+ [-W/2 + footW/2, KICK/2,  D1/2 - footD/2],
+ [ W/2 - footW/2, KICK/2,  D1/2 - footD/2]].forEach(p => {
+  const f = new THREE.Mesh(new THREE.BoxGeometry(footW, KICK, footD), woodMatDark);
+  f.position.set(p[0], p[1], p[2]);
+  f.castShadow = true; f.receiveShadow = true;
+  g1.add(f);
+});
+
+const base1 = KICK; // de la soclu în sus
+// laterale stânga / dreapta (înalte cât corpul, fără spate)
+g1.add(box(T, H1, D1, woodMat, -W/2 + T/2, base1, 0));
+g1.add(box(T, H1, D1, woodMat,  W/2 - T/2, base1, 0));
+// fund (poliță jos)
+g1.add(box(W - 2*T, T, D1, woodMat, 0, base1, 0));
+// poliță intermediară (raft deschis), aprox la jumătate sub sertar
+const midY1 = base1 + (H1 - DRAWER_H - 2*T) / 2;
+g1.add(box(W - 2*T, T, D1, woodMat, 0, midY1, 0));
+// blat (top)
+g1.add(box(W, T, D1 + 1, woodMatDark, 0, base1 + H1 - T, 0));
+// sertar — front + corp simulat
+const drawerY = base1 + H1 - T - DRAWER_H;
+const front = new THREE.Mesh(new THREE.BoxGeometry(W - 2*T - 1, DRAWER_H - 1, T), drawerFront);
+front.position.set(0, drawerY + (DRAWER_H-1)/2, D1/2 - T/2 - 0.2);
+front.castShadow = true; g1.add(front);
+// laterale sertar (vizibile pe lateral - subțiri)
+const sideL = new THREE.Mesh(new THREE.BoxGeometry(T*0.6, DRAWER_H - 4, D1 - 2*T - 4), woodMatDark);
+sideL.position.set(-(W/2 - T - 2), drawerY + (DRAWER_H-4)/2, -2);
+g1.add(sideL);
+const sideR = sideL.clone();
+sideR.position.x = (W/2 - T - 2);
+g1.add(sideR);
+const drawerBottom = new THREE.Mesh(new THREE.BoxGeometry(W - 2*T - 6, T*0.5, D1 - 2*T - 4), woodMatDark);
+drawerBottom.position.set(0, drawerY + 1, -2);
+g1.add(drawerBottom);
+// mâner sertar
+const handle = new THREE.Mesh(new THREE.BoxGeometry(20, 2, 2), handleMat);
+handle.position.set(0, drawerY + DRAWER_H/2, D1/2 - T/2 + 1.2);
+handle.castShadow = true;
+g1.add(handle);
+// suporți mâner
+[-9, 9].forEach(dx => {
+  const s = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.5, 2), handleMat);
+  s.position.set(dx, drawerY + DRAWER_H/2, D1/2 - T/2 + 0.5);
+  g1.add(s);
+});
+
+scene.add(g1);
+
+// === CORP 2 — mijloc: 50 h × 80 d, raft deschis ===
+const g2 = new THREE.Group();
+const base2 = base1 + H1; // pe blatul corpului 1
+// laterale
+g2.add(box(T, H2, D2, woodMat, -W/2 + T/2, base2, 0));
+g2.add(box(T, H2, D2, woodMat,  W/2 - T/2, base2, 0));
+// poliță sus (top corp 2 = bază pentru corp 3)
+g2.add(box(W, T, D2, woodMatDark, 0, base2 + H2 - T, 0));
+// poliță intermediară pe la jumătate
+g2.add(box(W - 2*T, T, D2, woodMat, 0, base2 + H2/2, 0));
+scene.add(g2);
+
+// === CORP 3 — sus: retras (60 d), raft deschis ===
+const g3 = new THREE.Group();
+const base3 = base2 + H2;
+// retras spre înapoi: aliniem fața din față spre interior cu 20 cm
+const zOffset3 = -(D2 - D3) / 2; // împinge spre spate
+// laterale
+g3.add(box(T, H3, D3, woodMat, -W/2 + T/2, base3, zOffset3));
+g3.add(box(T, H3, D3, woodMat,  W/2 - T/2, base3, zOffset3));
+// top
+g3.add(box(W, T, D3, woodMatDark, 0, base3 + H3 - T, zOffset3));
+// poliță intermediară
+g3.add(box(W - 2*T, T, D3, woodMat, 0, base3 + H3/2, zOffset3));
+scene.add(g3);
+
+// ------- cote / etichete -------
+const dimColor = 0xffcc66;
+const lineMat = new THREE.LineBasicMaterial({ color: dimColor });
+
+function line(p1, p2) {
+  const g = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(...p1), new THREE.Vector3(...p2)]);
+  return new THREE.Line(g, lineMat);
+}
+// linie de cotă cu "săgeți" (cruciulițe la capete)
+function dim(p1, p2) {
+  const grp = new THREE.Group();
+  grp.add(line(p1, p2));
+  // mici cruciulițe perpendiculare la capete (3 cm)
+  const t = 3;
+  const dx = (p2[0]-p1[0]), dy = (p2[1]-p1[1]), dz = (p2[2]-p1[2]);
+  const len = Math.hypot(dx, dy, dz) || 1;
+  // alegem axă perpendiculară "potrivită"
+  const ax = Math.abs(dy/len) > 0.9 ? [t,0,0] : (Math.abs(dx/len) > 0.9 ? [0,t,0] : [0,t,0]);
+  const ax2 = Math.abs(dy/len) > 0.9 ? [0,0,t] : [0,0,t];
+  [p1, p2].forEach(p => {
+    grp.add(line([p[0]-ax[0], p[1]-ax[1], p[2]-ax[2]], [p[0]+ax[0], p[1]+ax[1], p[2]+ax[2]]));
+    grp.add(line([p[0]-ax2[0], p[1]-ax2[1], p[2]-ax2[2]], [p[0]+ax2[0], p[1]+ax2[1], p[2]+ax2[2]]));
+  });
+  return grp;
+}
+
+// etichetă canvas (sprite mereu cu fața la cameră)
+function makeLabel(text, opts = {}) {
+  const fontSize = opts.fontSize || 36;
+  const pad = 10;
+  const c = document.createElement('canvas');
+  const ctx = c.getContext('2d');
+  ctx.font = `bold ${fontSize}px system-ui, sans-serif`;
+  const w = Math.ceil(ctx.measureText(text).width) + pad*2;
+  const h = fontSize + pad*2;
+  c.width = w; c.height = h;
+  ctx.font = `bold ${fontSize}px system-ui, sans-serif`;
+  ctx.fillStyle = 'rgba(20,20,20,0.85)';
+  ctx.fillRect(0, 0, w, h);
+  ctx.strokeStyle = '#ffcc66';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(1, 1, w-2, h-2);
+  ctx.fillStyle = '#ffcc66';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, pad, h/2);
+  const tex = new THREE.CanvasTexture(c);
+  tex.minFilter = THREE.LinearFilter;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false }));
+  // scalare în "cm" (h ~ scale Y)
+  const sy = opts.size || 9;
+  sp.scale.set(sy * (w/h), sy, 1);
+  sp.renderOrder = 999;
+  return sp;
+}
+
+const totalH = base3 + H3;
+
+// ===== ÎNĂLȚIMI — pe partea dreaptă =====
+const xR = W/2 + 22;
+// linii de extensie de pe corp până la linia de cotă
+scene.add(line([W/2, 0, D1/2], [xR + 6, 0, D1/2]));
+scene.add(line([W/2, H1, D1/2], [xR + 6, H1, D1/2]));
+scene.add(line([W/2, H1+H2, D1/2], [xR + 6, H1+H2, D1/2]));
+scene.add(line([W/2, totalH, D1/2], [xR + 6, totalH, D1/2]));
+// cote verticale (segmente individuale)
+scene.add(dim([xR, 0,    D1/2], [xR, H1,         D1/2])); // 70
+scene.add(dim([xR, H1,   D1/2], [xR, H1+H2,      D1/2])); // 50
+scene.add(dim([xR, H1+H2, D1/2],[xR, totalH,     D1/2])); // 40
+// cota totală mai în afară
+const xR2 = xR + 30;
+scene.add(line([xR, 0, D1/2], [xR2 + 4, 0, D1/2]));
+scene.add(line([xR, totalH, D1/2], [xR2 + 4, totalH, D1/2]));
+scene.add(dim([xR2, 0, D1/2], [xR2, totalH, D1/2]));
+
+const lH1 = makeLabel('70 cm (bază + sertar)'); lH1.position.set(xR + 28, H1/2, D1/2); scene.add(lH1);
+const lH2 = makeLabel('50 cm');                  lH2.position.set(xR + 18, H1 + H2/2, D1/2); scene.add(lH2);
+const lH3 = makeLabel('40 cm');                  lH3.position.set(xR + 18, H1 + H2 + H3/2, D1/2); scene.add(lH3);
+const lHT = makeLabel(`Total: ${totalH} cm`);    lHT.position.set(xR2 + 30, totalH/2, D1/2); scene.add(lHT);
+
+// ===== ADÂNCIMI — vedere de sus / lateral stâng =====
+// adâncime corp 1 + 2 (80 cm) — pe partea stângă, jos
+const xL = -W/2 - 18;
+scene.add(line([-W/2, 0, -D1/2], [xL - 6, 0, -D1/2]));
+scene.add(line([-W/2, 0,  D1/2], [xL - 6, 0,  D1/2]));
+scene.add(dim([xL, 0, -D1/2], [xL, 0, D1/2]));
+const lD = makeLabel('80 cm adâncime'); lD.position.set(xL - 6, 4, 0); scene.add(lD);
+
+// adâncime corp 3 retras (60 cm) — sus, în partea stângă
+const yTop = totalH + 14;
+scene.add(line([-W/2, totalH, zOffset3 - D3/2], [-W/2, yTop + 4, zOffset3 - D3/2]));
+scene.add(line([-W/2, totalH, zOffset3 + D3/2], [-W/2, yTop + 4, zOffset3 + D3/2]));
+scene.add(dim([-W/2, yTop, zOffset3 - D3/2], [-W/2, yTop, zOffset3 + D3/2]));
+const lD3lbl = makeLabel('60 cm (retras 20 cm)'); lD3lbl.position.set(-W/2 - 6, yTop + 8, zOffset3); scene.add(lD3lbl);
+
+// retragerea de 20 cm — sus, în față
+scene.add(line([W/2, totalH, D1/2], [W/2, totalH + 8, D1/2]));
+scene.add(line([W/2, totalH, zOffset3 + D3/2], [W/2, totalH + 8, zOffset3 + D3/2]));
+scene.add(dim([W/2 + 2, totalH + 6, D1/2], [W/2 + 2, totalH + 6, zOffset3 + D3/2]));
+const lRetras = makeLabel('20 cm retragere'); lRetras.position.set(W/2 + 30, totalH + 6, (D1/2 + zOffset3 + D3/2)/2); scene.add(lRetras);
+
+// ===== LĂȚIME — în față, jos =====
+const yL = -10;
+scene.add(line([-W/2, 0, D1/2], [-W/2, yL - 4, D1/2]));
+scene.add(line([ W/2, 0, D1/2], [ W/2, yL - 4, D1/2]));
+scene.add(dim([-W/2, yL, D1/2 + 2], [W/2, yL, D1/2 + 2]));
+const lWlbl = makeLabel('100 cm lățime'); lWlbl.position.set(0, yL - 8, D1/2 + 4); scene.add(lWlbl);
+
+// ===== ETICHETE PE CORPURI =====
+const lc1 = makeLabel('SERTAR', { fontSize: 22 });
+lc1.position.set(0, drawerY + DRAWER_H/2 + 14, D1/2 + 6);
+scene.add(lc1);
+
+const lc1b = makeLabel('raft deschis', { fontSize: 22 });
+lc1b.position.set(0, base1 + 14, D1/2 + 6);
+scene.add(lc1b);
+
+const lc2 = makeLabel('raft deschis', { fontSize: 22 });
+lc2.position.set(0, base2 + H2/2, D2/2 + 6);
+scene.add(lc2);
+
+const lc3 = makeLabel('raft retras', { fontSize: 22 });
+lc3.position.set(0, base3 + H3/2, zOffset3 + D3/2 + 6);
+scene.add(lc3);
+
+// ------- redare -------
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+(function loop(){
+  controls.update();
+  renderer.render(scene, camera);
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
