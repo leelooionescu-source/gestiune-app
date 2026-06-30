@@ -1,4 +1,5 @@
 import os
+from datetime import date, timedelta
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from database import get_db, init_db
@@ -6,6 +7,24 @@ from models import User, create_admin_if_needed
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'gestiune-app-secret-key-2024')
+
+
+def parse_number(value, label, cast=float, required=False, default=0):
+    """Parse a numeric form field safely.
+
+    Returns ``default`` for empty input (unless ``required``), and raises
+    ``ValueError(label)`` for missing-required or non-numeric input so callers
+    can flash a friendly message instead of crashing with a 500.
+    """
+    value = (value or '').strip()
+    if not value:
+        if required:
+            raise ValueError(label)
+        return default
+    try:
+        return cast(value)
+    except (ValueError, TypeError):
+        raise ValueError(label)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -104,14 +123,15 @@ def dashboard():
         'servicii_neincasate': db.execute("SELECT COUNT(*) as cnt FROM servicii WHERE status_incasare = 'Neincasat'").fetchone()['cnt'],
         'valoare_servicii_neincasate': db.execute("SELECT COALESCE(SUM(valoare_totala), 0) as val FROM servicii WHERE status_incasare = 'Neincasat'").fetchone()['val'],
     }
+    cutoff = (date.today() + timedelta(days=30)).isoformat()
     contracte_expira = db.execute("""
         SELECT c.*, cl.nume as client_nume
         FROM contracte c JOIN clienti cl ON c.client_id = cl.id
         WHERE c.status = 'Activ' AND c.data_sfarsit IS NOT NULL
-        AND c.data_sfarsit <= date('now', '+30 days')
+        AND c.data_sfarsit <= ?
         ORDER BY c.data_sfarsit
         LIMIT 5
-    """).fetchall()
+    """, (cutoff,)).fetchall()
     ultimele_facturi = db.execute("""
         SELECT f.*, ct.numar_contract
         FROM facturi f JOIN contracte ct ON f.contract_id = ct.id
@@ -274,10 +294,14 @@ def hg_sterge(id):
 @app.route('/servicii/adauga', methods=['POST'])
 @login_required
 def servicii_adauga():
-    contract_id = request.form['contract_id']
-    client_id = request.form['client_id']
-    numar_imobile = int(request.form.get('numar_imobile', 0) or 0)
-    pret_per_imobil = float(request.form.get('pret_per_imobil', 0) or 0)
+    contract_id = request.form.get('contract_id')
+    client_id = request.form.get('client_id')
+    try:
+        numar_imobile = parse_number(request.form.get('numar_imobile'), 'Numar imobile', cast=int)
+        pret_per_imobil = parse_number(request.form.get('pret_per_imobil'), 'Pret per imobil', cast=float)
+    except ValueError as e:
+        flash(f'Valoare numerică invalidă: {e}.', 'danger')
+        return redirect(url_for('clienti_detalii', id=client_id) if client_id else url_for('clienti_lista'))
     valoare_totala = numar_imobile * pret_per_imobil
     db = get_db()
     db.execute('''INSERT INTO servicii (contract_id, descriere_serviciu, numar_imobile, pret_per_imobil,
@@ -294,9 +318,13 @@ def servicii_adauga():
 @app.route('/servicii/editeaza/<int:id>', methods=['POST'])
 @login_required
 def servicii_editeaza(id):
-    client_id = request.form['client_id']
-    numar_imobile = int(request.form.get('numar_imobile', 0) or 0)
-    pret_per_imobil = float(request.form.get('pret_per_imobil', 0) or 0)
+    client_id = request.form.get('client_id')
+    try:
+        numar_imobile = parse_number(request.form.get('numar_imobile'), 'Numar imobile', cast=int)
+        pret_per_imobil = parse_number(request.form.get('pret_per_imobil'), 'Pret per imobil', cast=float)
+    except ValueError as e:
+        flash(f'Valoare numerică invalidă: {e}.', 'danger')
+        return redirect(url_for('clienti_detalii', id=client_id) if client_id else url_for('clienti_lista'))
     valoare_totala = numar_imobile * pret_per_imobil
     db = get_db()
     db.execute('''UPDATE servicii SET descriere_serviciu=?, numar_imobile=?, pret_per_imobil=?,
@@ -364,11 +392,17 @@ def contracte_lista():
 def contracte_adauga():
     db = get_db()
     if request.method == 'POST':
+        try:
+            valoare = parse_number(request.form.get('valoare'), 'Valoare', cast=float, default=None)
+        except ValueError as e:
+            db.close()
+            flash(f'Valoare invalidă: {e}.', 'danger')
+            return redirect(url_for('contracte_adauga'))
         db.execute('''INSERT INTO contracte (numar_contract, client_id, descriere, valoare, data_inceput, data_sfarsit, status)
                       VALUES (?, ?, ?, ?, ?, ?, ?)''',
-                   (request.form['numar_contract'].strip(), request.form['client_id'],
+                   (request.form.get('numar_contract', '').strip(), request.form.get('client_id'),
                     request.form.get('descriere', '').strip(),
-                    float(request.form['valoare']) if request.form.get('valoare') else None,
+                    valoare,
                     request.form.get('data_inceput') or None, request.form.get('data_sfarsit') or None,
                     request.form.get('status', 'Activ')))
         db.commit()
@@ -385,11 +419,17 @@ def contracte_adauga():
 def contracte_editeaza(id):
     db = get_db()
     if request.method == 'POST':
+        try:
+            valoare = parse_number(request.form.get('valoare'), 'Valoare', cast=float, default=None)
+        except ValueError as e:
+            db.close()
+            flash(f'Valoare invalidă: {e}.', 'danger')
+            return redirect(url_for('contracte_editeaza', id=id))
         db.execute('''UPDATE contracte SET numar_contract=?, client_id=?, descriere=?, valoare=?,
                       data_inceput=?, data_sfarsit=?, status=?, actualizat_la=CURRENT_TIMESTAMP WHERE id=?''',
-                   (request.form['numar_contract'].strip(), request.form['client_id'],
+                   (request.form.get('numar_contract', '').strip(), request.form.get('client_id'),
                     request.form.get('descriere', '').strip(),
-                    float(request.form['valoare']) if request.form.get('valoare') else None,
+                    valoare,
                     request.form.get('data_inceput') or None, request.form.get('data_sfarsit') or None,
                     request.form.get('status', 'Activ'), id))
         db.commit()
@@ -624,10 +664,21 @@ def facturi_lista():
 def facturi_adauga():
     db = get_db()
     if request.method == 'POST':
+        try:
+            valoare = parse_number(request.form.get('valoare'), 'Valoare', cast=float, required=True)
+        except ValueError as e:
+            db.close()
+            flash(f'Valoare invalidă: {e}.', 'danger')
+            return redirect(url_for('facturi_adauga'))
+        data_emitere = request.form.get('data_emitere')
+        if not data_emitere:
+            db.close()
+            flash('Data emiterii este obligatorie.', 'danger')
+            return redirect(url_for('facturi_adauga'))
         db.execute('''INSERT INTO facturi (numar_factura, contract_id, valoare, data_emitere, data_scadenta, status)
                       VALUES (?, ?, ?, ?, ?, ?)''',
-                   (request.form['numar_factura'].strip(), request.form['contract_id'],
-                    float(request.form['valoare']), request.form['data_emitere'],
+                   (request.form.get('numar_factura', '').strip(), request.form.get('contract_id'),
+                    valoare, data_emitere,
                     request.form.get('data_scadenta') or None, request.form.get('status', 'Emisa')))
         db.commit()
         db.close()
@@ -645,10 +696,21 @@ def facturi_adauga():
 def facturi_editeaza(id):
     db = get_db()
     if request.method == 'POST':
+        try:
+            valoare = parse_number(request.form.get('valoare'), 'Valoare', cast=float, required=True)
+        except ValueError as e:
+            db.close()
+            flash(f'Valoare invalidă: {e}.', 'danger')
+            return redirect(url_for('facturi_editeaza', id=id))
+        data_emitere = request.form.get('data_emitere')
+        if not data_emitere:
+            db.close()
+            flash('Data emiterii este obligatorie.', 'danger')
+            return redirect(url_for('facturi_editeaza', id=id))
         db.execute('''UPDATE facturi SET numar_factura=?, contract_id=?, valoare=?, data_emitere=?,
                       data_scadenta=?, status=?, actualizat_la=CURRENT_TIMESTAMP WHERE id=?''',
-                   (request.form['numar_factura'].strip(), request.form['contract_id'],
-                    float(request.form['valoare']), request.form['data_emitere'],
+                   (request.form.get('numar_factura', '').strip(), request.form.get('contract_id'),
+                    valoare, data_emitere,
                     request.form.get('data_scadenta') or None, request.form.get('status', 'Emisa'), id))
         db.commit()
         db.close()
@@ -676,9 +738,11 @@ def facturi_sterge(id):
     return redirect(url_for('facturi_lista'))
 
 
-# Initialize DB and admin on import (needed for gunicorn)
-init_db()
-create_admin_if_needed()
-
 if __name__ == '__main__':
+    # Local development only. Under SQLite this creates gestiune.db and seeds the
+    # admin user. Under Postgres (DATABASE_URL set) init_db() is a no-op -- the
+    # schema is applied out of band (see seed_admin.py / supabase/schema.sql), so
+    # no DDL or seeding runs on serverless cold starts.
+    init_db()
+    create_admin_if_needed()
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=True)

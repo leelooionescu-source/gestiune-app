@@ -1,3 +1,4 @@
+import os
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from database import get_db
@@ -33,7 +34,12 @@ class User(UserMixin):
     def create(username, password, nume, is_admin=0):
         db = get_db()
         password_hash = generate_password_hash(password)
-        db.execute('INSERT INTO utilizatori (username, password_hash, nume, is_admin) VALUES (?, ?, ?, ?)',
+        # ON CONFLICT keeps this idempotent on the UNIQUE username constraint
+        # (supported by Postgres and modern SQLite); the add-user UI already
+        # pre-checks for duplicates, so this is just defensive.
+        db.execute('''INSERT INTO utilizatori (username, password_hash, nume, is_admin)
+                      VALUES (?, ?, ?, ?)
+                      ON CONFLICT (username) DO NOTHING''',
                    (username, password_hash, nume, is_admin))
         db.commit()
         db.close()
@@ -59,4 +65,7 @@ class User(UserMixin):
 def create_admin_if_needed():
     user = User.get_by_username('admin')
     if not user:
-        User.create('admin', 'admin123', 'Administrator', is_admin=1)
+        # Set ADMIN_PASSWORD when seeding production so the initial password is
+        # not the well-known default. Falls back to 'admin123' for local dev.
+        password = os.environ.get('ADMIN_PASSWORD', 'admin123')
+        User.create('admin', password, 'Administrator', is_admin=1)

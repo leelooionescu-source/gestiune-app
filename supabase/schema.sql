@@ -1,11 +1,21 @@
 -- Gestiune App - Supabase PostgreSQL Schema
+--
+-- Aligned with the Flask application, which authenticates with Flask-Login +
+-- Werkzeug password hashing. Therefore `utilizatori` stores `password_hash`
+-- and `is_admin` as INTEGER (0/1) -- there is NO dependency on Supabase Auth
+-- (auth.users). The app connects with the Postgres role from DATABASE_URL and
+-- is the only client, so Row Level Security is intentionally NOT enabled (the
+-- previous `TO authenticated` policies would have blocked the app's role).
+--
+-- Apply once: run `DATABASE_URL=... python seed_admin.py` (creates the schema
+-- and the admin user), or paste this file into the Supabase SQL editor.
 
 CREATE TABLE IF NOT EXISTS utilizatori (
     id BIGSERIAL PRIMARY KEY,
-    auth_user_id UUID UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
     username TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
     nume TEXT NOT NULL,
-    is_admin BOOLEAN DEFAULT FALSE,
+    is_admin INTEGER DEFAULT 0,
     creat_la TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -94,28 +104,7 @@ CREATE TABLE IF NOT EXISTS servicii (
     actualizat_la TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Row Level Security
-ALTER TABLE utilizatori ENABLE ROW LEVEL SECURITY;
-ALTER TABLE clienti ENABLE ROW LEVEL SECURITY;
-ALTER TABLE contracte ENABLE ROW LEVEL SECURITY;
-ALTER TABLE proiecte ENABLE ROW LEVEL SECURITY;
-ALTER TABLE predari ENABLE ROW LEVEL SECURITY;
-ALTER TABLE facturi ENABLE ROW LEVEL SECURITY;
-ALTER TABLE hg_uri ENABLE ROW LEVEL SECURITY;
-ALTER TABLE servicii ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "auth_read_utilizatori" ON utilizatori FOR SELECT TO authenticated USING (true);
-CREATE POLICY "auth_insert_utilizatori" ON utilizatori FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY "auth_delete_utilizatori" ON utilizatori FOR DELETE TO authenticated USING (true);
-CREATE POLICY "auth_all_clienti" ON clienti FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "auth_all_contracte" ON contracte FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "auth_all_proiecte" ON proiecte FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "auth_all_predari" ON predari FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "auth_all_facturi" ON facturi FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "auth_all_hg_uri" ON hg_uri FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "auth_all_servicii" ON servicii FOR ALL TO authenticated USING (true) WITH CHECK (true);
-
--- Auto-update trigger
+-- Auto-update trigger for actualizat_la
 CREATE OR REPLACE FUNCTION update_actualizat_la()
 RETURNS TRIGGER AS $$
 BEGIN

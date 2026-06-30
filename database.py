@@ -1,10 +1,108 @@
-import sqlite3
+"""Database access layer.
+
+The app was originally written for SQLite, but SQLite cannot work on a
+serverless host like Vercel (read-only, ephemeral filesystem). To make the
+deployed app persist data, this module connects to Postgres (Supabase) when a
+``DATABASE_URL`` environment variable is present, and falls back to SQLite for
+local development when it is not.
+
+To keep the change small, the Postgres path exposes a thin compatibility shim
+that mimics the small slice of the ``sqlite3`` API the app actually uses:
+
+    db = get_db()
+    row  = db.execute("SELECT * FROM clienti WHERE id = ?", (cid,)).fetchone()
+    rows = db.execute("SELECT * FROM clienti").fetchall()
+    db.commit()
+    db.close()
+
+Rows are returned as dict-like objects so ``row['coloana']`` keeps working, and
+SQLite ``?`` placeholders are translated to psycopg2 ``%s`` automatically, so the
+~80 queries in ``app.py`` / ``models.py`` do not need to change.
+"""
+
 import os
+import sqlite3
 
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'gestiune.db')
 
+DATABASE_URL = os.environ.get('DATABASE_URL')
+USE_POSTGRES = bool(DATABASE_URL)
+
+
+# --------------------------------------------------------------------------- #
+# Postgres compatibility shim
+# --------------------------------------------------------------------------- #
+
+def _translate(sql, has_params):
+    """Translate SQLite-style SQL to psycopg2-style.
+
+    ``?`` placeholders become ``%s``. Any literal ``%`` is escaped to ``%%`` so
+    psycopg2's own parameter formatting does not misinterpret it -- but only
+    when parameters are actually supplied (psycopg2 does not run formatting when
+    ``params`` is ``None``).
+    """
+    if has_params:
+        sql = sql.replace('%', '%%')
+    return sql.replace('?', '%s')
+
+
+class _Result:
+    """Wraps an executed cursor so ``.fetchone()`` / ``.fetchall()`` chain."""
+
+    def __init__(self, cursor):
+        self._cursor = cursor
+
+    def fetchone(self):
+        import psycopg2
+        try:
+            return self._cursor.fetchone()
+        except psycopg2.ProgrammingError:
+            # Called after a statement that returns no rows (INSERT/UPDATE/DDL).
+            return None
+
+    def fetchall(self):
+        import psycopg2
+        try:
+            return self._cursor.fetchall()
+        except psycopg2.ProgrammingError:
+            return []
+
+
+class _PgConnection:
+    """Minimal sqlite3-connection lookalike backed by psycopg2."""
+
+    def __init__(self, conn):
+        self._conn = conn
+
+    def execute(self, sql, params=None):
+        from psycopg2.extras import RealDictCursor
+        cur = self._conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute(_translate(sql, params is not None), params)
+        return _Result(cur)
+
+    def commit(self):
+        self._conn.commit()
+
+    def rollback(self):
+        self._conn.rollback()
+
+    def close(self):
+        self._conn.close()
+
+
+# --------------------------------------------------------------------------- #
+# Public API
+# --------------------------------------------------------------------------- #
 
 def get_db():
+    if USE_POSTGRES:
+        import psycopg2
+        # DATABASE_URL points at the Supabase connection pooler and carries
+        # ?sslmode=require. A fresh connection per request is fine because the
+        # pooler (PgBouncer) absorbs the connect churn.
+        conn = psycopg2.connect(DATABASE_URL, connect_timeout=10)
+        return _PgConnection(conn)
+
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
@@ -12,6 +110,17 @@ def get_db():
 
 
 def init_db():
+    """Create the schema.
+
+    Under Postgres this is a no-op: the schema is applied once, out of band, via
+    ``seed_admin.py`` or the Supabase SQL editor (see ``supabase/schema.sql``).
+    Running DDL on every serverless cold start would only add latency.
+
+    Under SQLite (local development) it creates ``gestiune.db`` with all tables.
+    """
+    if USE_POSTGRES:
+        return
+
     conn = get_db()
     cursor = conn.cursor()
 
