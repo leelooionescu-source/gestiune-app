@@ -1,11 +1,18 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, flash
+import uuid
+from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
+from werkzeug.utils import secure_filename
 from database import get_db, init_db
 from models import User, create_admin_if_needed
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'gestiune-app-secret-key-2024')
+
+UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
+EXTENSII_PERMISE = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'}
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50 MB per upload
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -674,6 +681,237 @@ def facturi_sterge(id):
     db.close()
     flash('Factură ștearsă.', 'success')
     return redirect(url_for('facturi_lista'))
+
+
+# ==================== POZE ====================
+
+def extensie_permisa(nume_fisier):
+    return '.' in nume_fisier and nume_fisier.rsplit('.', 1)[1].lower() in EXTENSII_PERMISE
+
+
+@app.route('/poze')
+@login_required
+def poze_galerie():
+    db = get_db()
+    cautare = request.args.get('cautare', '').strip()
+    eticheta_filtru = request.args.get('eticheta', type=int)
+    query = """SELECT p.*, GROUP_CONCAT(e.id || '|' || e.nume || '|' || e.culoare, ';;') as etichete_raw
+               FROM poze p
+               LEFT JOIN poza_etichete pe ON pe.poza_id = p.id
+               LEFT JOIN etichete e ON e.id = pe.eticheta_id
+               WHERE 1=1"""
+    params = []
+    if cautare:
+        query += " AND (p.nume_original LIKE ? OR p.descriere LIKE ?)"
+        params.extend([f'%{cautare}%'] * 2)
+    if eticheta_filtru:
+        query += """ AND p.id IN (SELECT poza_id FROM poza_etichete WHERE eticheta_id = ?)"""
+        params.append(eticheta_filtru)
+    query += " GROUP BY p.id ORDER BY p.creat_la DESC"
+    rows = db.execute(query, params).fetchall()
+    poze = []
+    for row in rows:
+        etichete = []
+        if row['etichete_raw']:
+            for item in row['etichete_raw'].split(';;'):
+                eid, nume, culoare = item.split('|')
+                etichete.append({'id': int(eid), 'nume': nume, 'culoare': culoare})
+        poze.append({'poza': row, 'etichete': etichete})
+    etichete_toate = db.execute("""
+        SELECT e.*, COUNT(pe.poza_id) as numar_poze
+        FROM etichete e LEFT JOIN poza_etichete pe ON pe.eticheta_id = e.id
+        GROUP BY e.id ORDER BY e.nume
+    """).fetchall()
+    db.close()
+    return render_template('poze/galerie.html', poze=poze, etichete_toate=etichete_toate,
+                           cautare=cautare, eticheta_filtru=eticheta_filtru)
+
+
+@app.route('/poze/incarca', methods=['POST'])
+@login_required
+def poze_incarca():
+    fisiere = request.files.getlist('poze')
+    descriere = request.form.get('descriere', '').strip()
+    incarcate = 0
+    respinse = 0
+    db = get_db()
+    for fisier in fisiere:
+        if not fisier or not fisier.filename:
+            continue
+        if not extensie_permisa(fisier.filename):
+            respinse += 1
+            continue
+        extensie = fisier.filename.rsplit('.', 1)[1].lower()
+        nume_original = secure_filename(fisier.filename) or f'poza.{extensie}'
+        nume_stocat = f'{uuid.uuid4().hex}.{extensie}'
+        fisier.save(os.path.join(UPLOAD_FOLDER, nume_stocat))
+        db.execute('INSERT INTO poze (fisier, nume_original, descriere) VALUES (?, ?, ?)',
+                   (nume_stocat, nume_original, descriere))
+        incarcate += 1
+    db.commit()
+    db.close()
+    if incarcate:
+        flash(f'{incarcate} poză(e) încărcată(e) cu succes.', 'success')
+    if respinse:
+        flash(f'{respinse} fișier(e) respins(e) - sunt permise doar imagini (png, jpg, jpeg, gif, webp, bmp).', 'danger')
+    if not incarcate and not respinse:
+        flash('Nu ai selectat nicio poză.', 'danger')
+    return redirect(url_for('poze_galerie'))
+
+
+@app.route('/poze/fisier/<fisier>')
+@login_required
+def poze_fisier(fisier):
+    return send_from_directory(UPLOAD_FOLDER, secure_filename(fisier))
+
+
+@app.route('/poze/<int:id>')
+@login_required
+def poze_detalii(id):
+    db = get_db()
+    poza = db.execute('SELECT * FROM poze WHERE id = ?', (id,)).fetchone()
+    if not poza:
+        db.close()
+        flash('Poză negăsită.', 'danger')
+        return redirect(url_for('poze_galerie'))
+    etichete = db.execute("""SELECT e.* FROM etichete e
+                             JOIN poza_etichete pe ON pe.eticheta_id = e.id
+                             WHERE pe.poza_id = ? ORDER BY e.nume""", (id,)).fetchall()
+    etichete_disponibile = db.execute("""SELECT * FROM etichete
+                                         WHERE id NOT IN (SELECT eticheta_id FROM poza_etichete WHERE poza_id = ?)
+                                         ORDER BY nume""", (id,)).fetchall()
+    db.close()
+    return render_template('poze/detalii.html', poza=poza, etichete=etichete,
+                           etichete_disponibile=etichete_disponibile)
+
+
+@app.route('/poze/<int:id>/descriere', methods=['POST'])
+@login_required
+def poze_descriere(id):
+    db = get_db()
+    db.execute('UPDATE poze SET descriere = ? WHERE id = ?',
+               (request.form.get('descriere', '').strip(), id))
+    db.commit()
+    db.close()
+    flash('Descriere actualizată.', 'success')
+    return redirect(url_for('poze_detalii', id=id))
+
+
+@app.route('/poze/<int:id>/etichete/adauga', methods=['POST'])
+@login_required
+def poze_eticheta_adauga(id):
+    db = get_db()
+    eticheta_id = request.form.get('eticheta_id', type=int)
+    nume_nou = request.form.get('nume_nou', '').strip()
+    if nume_nou:
+        existenta = db.execute('SELECT id FROM etichete WHERE nume = ?', (nume_nou,)).fetchone()
+        if existenta:
+            eticheta_id = existenta['id']
+        else:
+            culoare = request.form.get('culoare', '#0d6efd')
+            cursor = db.execute('INSERT INTO etichete (nume, culoare) VALUES (?, ?)', (nume_nou, culoare))
+            eticheta_id = cursor.lastrowid
+    if eticheta_id:
+        db.execute('INSERT OR IGNORE INTO poza_etichete (poza_id, eticheta_id) VALUES (?, ?)', (id, eticheta_id))
+        db.commit()
+        flash('Etichetă adăugată.', 'success')
+    else:
+        flash('Selectează o etichetă sau scrie una nouă.', 'danger')
+    db.close()
+    return redirect(url_for('poze_detalii', id=id))
+
+
+@app.route('/poze/<int:id>/etichete/sterge/<int:eticheta_id>')
+@login_required
+def poze_eticheta_sterge(id, eticheta_id):
+    db = get_db()
+    db.execute('DELETE FROM poza_etichete WHERE poza_id = ? AND eticheta_id = ?', (id, eticheta_id))
+    db.commit()
+    db.close()
+    flash('Etichetă eliminată de pe poză.', 'success')
+    return redirect(url_for('poze_detalii', id=id))
+
+
+@app.route('/poze/sterge/<int:id>')
+@login_required
+def poze_sterge(id):
+    db = get_db()
+    poza = db.execute('SELECT * FROM poze WHERE id = ?', (id,)).fetchone()
+    if poza:
+        db.execute('DELETE FROM poza_etichete WHERE poza_id = ?', (id,))
+        db.execute('DELETE FROM poze WHERE id = ?', (id,))
+        db.commit()
+        cale = os.path.join(UPLOAD_FOLDER, poza['fisier'])
+        if os.path.exists(cale):
+            os.remove(cale)
+        flash('Poză ștearsă.', 'success')
+    else:
+        flash('Poză negăsită.', 'danger')
+    db.close()
+    return redirect(url_for('poze_galerie'))
+
+
+# ==================== ETICHETE ====================
+
+@app.route('/etichete')
+@login_required
+def etichete_lista():
+    db = get_db()
+    etichete = db.execute("""
+        SELECT e.*, COUNT(pe.poza_id) as numar_poze
+        FROM etichete e LEFT JOIN poza_etichete pe ON pe.eticheta_id = e.id
+        GROUP BY e.id ORDER BY e.nume
+    """).fetchall()
+    db.close()
+    return render_template('poze/etichete.html', etichete=etichete)
+
+
+@app.route('/etichete/adauga', methods=['POST'])
+@login_required
+def etichete_adauga():
+    nume = request.form.get('nume', '').strip()
+    culoare = request.form.get('culoare', '#0d6efd')
+    if not nume:
+        flash('Numele etichetei este obligatoriu.', 'danger')
+        return redirect(url_for('etichete_lista'))
+    db = get_db()
+    existenta = db.execute('SELECT id FROM etichete WHERE nume = ?', (nume,)).fetchone()
+    if existenta:
+        flash('Această etichetă există deja.', 'danger')
+    else:
+        db.execute('INSERT INTO etichete (nume, culoare) VALUES (?, ?)', (nume, culoare))
+        db.commit()
+        flash(f'Eticheta "{nume}" a fost adăugată.', 'success')
+    db.close()
+    return redirect(url_for('etichete_lista'))
+
+
+@app.route('/etichete/editeaza/<int:id>', methods=['POST'])
+@login_required
+def etichete_editeaza(id):
+    nume = request.form.get('nume', '').strip()
+    culoare = request.form.get('culoare', '#0d6efd')
+    if not nume:
+        flash('Numele etichetei este obligatoriu.', 'danger')
+        return redirect(url_for('etichete_lista'))
+    db = get_db()
+    db.execute('UPDATE etichete SET nume = ?, culoare = ? WHERE id = ?', (nume, culoare, id))
+    db.commit()
+    db.close()
+    flash('Etichetă actualizată.', 'success')
+    return redirect(url_for('etichete_lista'))
+
+
+@app.route('/etichete/sterge/<int:id>')
+@login_required
+def etichete_sterge(id):
+    db = get_db()
+    db.execute('DELETE FROM poza_etichete WHERE eticheta_id = ?', (id,))
+    db.execute('DELETE FROM etichete WHERE id = ?', (id,))
+    db.commit()
+    db.close()
+    flash('Etichetă ștearsă.', 'success')
+    return redirect(url_for('etichete_lista'))
 
 
 # Initialize DB and admin on import (needed for gunicorn)

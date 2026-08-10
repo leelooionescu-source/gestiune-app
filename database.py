@@ -115,6 +115,29 @@ def init_db():
             actualizat_la TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (contract_id) REFERENCES contracte(id)
         );
+
+        CREATE TABLE IF NOT EXISTS poze (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            fisier TEXT UNIQUE NOT NULL,
+            nume_original TEXT NOT NULL,
+            descriere TEXT,
+            creat_la TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS etichete (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nume TEXT UNIQUE NOT NULL,
+            culoare TEXT DEFAULT '#0d6efd',
+            creat_la TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS poza_etichete (
+            poza_id INTEGER NOT NULL,
+            eticheta_id INTEGER NOT NULL,
+            PRIMARY KEY (poza_id, eticheta_id),
+            FOREIGN KEY (poza_id) REFERENCES poze(id) ON DELETE CASCADE,
+            FOREIGN KEY (eticheta_id) REFERENCES etichete(id) ON DELETE CASCADE
+        );
     ''')
 
     conn.commit()

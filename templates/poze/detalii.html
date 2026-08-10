@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}{{ poza.nume_original }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="text-truncate"><i class="bi bi-image"></i> {{ poza.nume_original }}</h4>
+    <div>
+        <a href="{{ url_for('poze_galerie') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Inapoi la galerie
+        </a>
+        <a href="{{ url_for('poze_sterge', id=poza.id) }}" class="btn btn-outline-danger"
+           onclick="return confirm('Sigur vrei sa stergi aceasta poza?')">
+            <i class="bi bi-trash"></i> Sterge
+        </a>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-8">
+        <div class="card">
+            <img src="{{ url_for('poze_fisier', fisier=poza.fisier) }}" class="card-img-top"
+                 style="max-height: 75vh; object-fit: contain; background: #f8f9fa;" alt="{{ poza.nume_original }}">
+            <div class="card-body py-2 text-muted small">
+                Incarcata la: {{ poza.creat_la }}
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card mb-3">
+            <div class="card-header"><i class="bi bi-tags"></i> Etichete</div>
+            <div class="card-body">
+                <div class="mb-3">
+                    {% for et in etichete %}
+                    <span class="badge rounded-pill me-1 mb-1" style="background-color: {{ et.culoare }};">
+                        {{ et.nume }}
+                        <a href="{{ url_for('poze_eticheta_sterge', id=poza.id, eticheta_id=et.id) }}"
+                           class="text-white text-decoration-none ms-1" title="Elimina eticheta">&times;</a>
+                    </span>
+                    {% else %}
+                    <span class="text-muted">Nicio eticheta atasata.</span>
+                    {% endfor %}
+                </div>
+
+                <form method="POST" action="{{ url_for('poze_eticheta_adauga', id=poza.id) }}">
+                    {% if etichete_disponibile %}
+                    <div class="mb-2">
+                        <label class="form-label small mb-1">Adauga eticheta existenta</label>
+                        <div class="input-group input-group-sm">
+                            <select class="form-select" name="eticheta_id">
+                                <option value="">-- alege --</option>
+                                {% for et in etichete_disponibile %}
+                                <option value="{{ et.id }}">{{ et.nume }}</option>
+                                {% endfor %}
+                            </select>
+                            <button type="submit" class="btn btn-outline-primary"><i class="bi bi-plus-lg"></i></button>
+                        </div>
+                    </div>
+                    {% endif %}
+                </form>
+
+                <form method="POST" action="{{ url_for('poze_eticheta_adauga', id=poza.id) }}">
+                    <label class="form-label small mb-1">Sau creeaza eticheta noua</label>
+                    <div class="input-group input-group-sm">
+                        <input type="text" class="form-control" name="nume_nou" placeholder="Nume eticheta">
+                        <input type="color" class="form-control form-control-color" name="culoare" value="#0d6efd" title="Culoare">
+                        <button type="submit" class="btn btn-outline-primary"><i class="bi bi-plus-lg"></i></button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><i class="bi bi-card-text"></i> Descriere</div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('poze_descriere', id=poza.id) }}">
+                    <textarea class="form-control mb-2" name="descriere" rows="4"
+                              placeholder="Adauga o descriere...">{{ poza.descriere or '' }}</textarea>
+                    <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-save"></i> Salveaza</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

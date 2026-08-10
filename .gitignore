@@ -2,6 +2,7 @@ __pycache__/
 *.pyc
 *.pyo
 gestiune.db
+uploads/
 .env
 *.egg-info/
 dist/

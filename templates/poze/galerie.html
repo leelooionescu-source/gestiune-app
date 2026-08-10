@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}Poze{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4><i class="bi bi-images"></i> Poze</h4>
+    <div>
+        <a href="{{ url_for('etichete_lista') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-tags"></i> Etichete
+        </a>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalIncarcare">
+            <i class="bi bi-cloud-arrow-up"></i> Incarca Poze
+        </button>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <form method="GET" class="row g-2 align-items-center">
+            <div class="col-auto flex-grow-1">
+                <input type="text" class="form-control form-control-sm" name="cautare" placeholder="Cauta dupa nume sau descriere..." value="{{ cautare }}">
+            </div>
+            {% if eticheta_filtru %}
+            <input type="hidden" name="eticheta" value="{{ eticheta_filtru }}">
+            {% endif %}
+            <div class="col-auto">
+                <button type="submit" class="btn btn-sm btn-outline-primary"><i class="bi bi-search"></i> Cauta</button>
+            </div>
+            {% if cautare or eticheta_filtru %}
+            <div class="col-auto">
+                <a href="{{ url_for('poze_galerie') }}" class="btn btn-sm btn-outline-secondary">Resetare</a>
+            </div>
+            {% endif %}
+        </form>
+        {% if etichete_toate %}
+        <div class="mt-2">
+            <a href="{{ url_for('poze_galerie', cautare=cautare or none) }}"
+               class="badge rounded-pill text-decoration-none me-1 {% if not eticheta_filtru %}bg-dark{% else %}bg-secondary-subtle text-dark{% endif %}">
+                Toate
+            </a>
+            {% for et in etichete_toate %}
+            <a href="{{ url_for('poze_galerie', eticheta=et.id, cautare=cautare or none) }}"
+               class="badge rounded-pill text-decoration-none me-1"
+               style="background-color: {{ et.culoare }};{% if eticheta_filtru == et.id %} outline: 2px solid #212529; outline-offset: 1px;{% endif %}">
+                {{ et.nume }} ({{ et.numar_poze }})
+            </a>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row g-3">
+    {% for item in poze %}
+    <div class="col-6 col-md-4 col-lg-3 col-xl-2">
+        <div class="card h-100">
+            <a href="{{ url_for('poze_detalii', id=item.poza.id) }}">
+                <img src="{{ url_for('poze_fisier', fisier=item.poza.fisier) }}" class="card-img-top"
+                     style="height: 160px; object-fit: cover;" alt="{{ item.poza.nume_original }}">
+            </a>
+            <div class="card-body p-2">
+                <div class="small text-truncate" title="{{ item.poza.nume_original }}">{{ item.poza.nume_original }}</div>
+                <div class="mt-1">
+                    {% for et in item.etichete %}
+                    <span class="badge rounded-pill" style="background-color: {{ et.culoare }};">{{ et.nume }}</span>
+                    {% else %}
+                    <span class="badge rounded-pill bg-light text-muted border">fara etichete</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body text-center text-muted py-5">
+                {% if cautare or eticheta_filtru %}
+                Nicio poza gasita pentru filtrele selectate.
+                {% else %}
+                Nicio poza incarcata. Apasa pe <strong>Incarca Poze</strong> pentru a adauga primele poze.
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="modal fade" id="modalIncarcare" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('poze_incarca') }}" enctype="multipart/form-data">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-cloud-arrow-up"></i> Incarca Poze</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Poze (poti selecta mai multe)</label>
+                        <input type="file" class="form-control" name="poze" accept="image/*" multiple required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Descriere (optional, se aplica tuturor pozelor)</label>
+                        <textarea class="form-control" name="descriere" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Renunta</button>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-cloud-arrow-up"></i> Incarca</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -134,3 +134,24 @@ DROP TRIGGER IF EXISTS update_facturi_actualizat_la ON facturi;
 CREATE TRIGGER update_facturi_actualizat_la BEFORE UPDATE ON facturi FOR EACH ROW EXECUTE FUNCTION update_actualizat_la();
 DROP TRIGGER IF EXISTS update_servicii_actualizat_la ON servicii;
 CREATE TRIGGER update_servicii_actualizat_la BEFORE UPDATE ON servicii FOR EACH ROW EXECUTE FUNCTION update_actualizat_la();
+
+CREATE TABLE IF NOT EXISTS poze (
+    id BIGSERIAL PRIMARY KEY,
+    fisier TEXT UNIQUE NOT NULL,
+    nume_original TEXT NOT NULL,
+    descriere TEXT,
+    creat_la TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS etichete (
+    id BIGSERIAL PRIMARY KEY,
+    nume TEXT UNIQUE NOT NULL,
+    culoare TEXT DEFAULT '#0d6efd',
+    creat_la TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS poza_etichete (
+    poza_id BIGINT NOT NULL REFERENCES poze(id) ON DELETE CASCADE,
+    eticheta_id BIGINT NOT NULL REFERENCES etichete(id) ON DELETE CASCADE,
+    PRIMARY KEY (poza_id, eticheta_id)
+);
