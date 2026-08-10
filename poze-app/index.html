@@ -67,6 +67,7 @@
   .card img { width: 100%; height: 140px; object-fit: cover; display: block; background: #eee; }
   .card .info { padding: 8px 10px 10px; }
   .card .nume { font-size: .82rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card .loc { font-size: .7rem; color: #0ca678; font-weight: 700; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .card .taguri { margin-top: 5px; display: flex; gap: 4px; flex-wrap: wrap; }
   .mini-tag { border-radius: 999px; padding: 1.5px 8px; font-size: .68rem; font-weight: 700; color: #fff; }
   .mini-tag.none { background: #f0f0f5; color: #9a98b0; }
@@ -91,6 +92,12 @@
   @media (max-width: 760px) { .modal-body { grid-template-columns: 1fr; } }
   .viewer { position: relative; background: #14121f; display: flex; align-items: center; justify-content: center; min-height: 300px; }
   .viewer img { max-width: 100%; max-height: 62vh; display: block; }
+  .photo-loc {
+    position: absolute; left: 0; right: 0; bottom: 0; padding: 30px 14px 10px;
+    background: linear-gradient(transparent, rgba(0,0,0,.78)); color: #fff; font-weight: 700;
+    font-size: .95rem; text-shadow: 0 1px 3px rgba(0,0,0,.9); display: none;
+  }
+  .photo-loc.show { display: block; }
   .nav-btn {
     position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,.85);
     border: none; border-radius: 50%; width: 38px; height: 38px; font-size: 1.15rem; cursor: pointer; font-weight: 700;
@@ -176,6 +183,7 @@
     <div class="modal-body">
       <div class="viewer">
         <img id="dImg" alt="">
+        <div class="photo-loc" id="dLoc"></div>
         <button class="nav-btn prev" id="dPrev">‹</button>
         <button class="nav-btn next" id="dNext">›</button>
       </div>
@@ -204,6 +212,7 @@
           <button class="btn btn-sm btn-danger" id="dDelete">🗑 Șterge</button>
         </div>
         <div class="datum" id="dData"></div>
+        <div class="datum"><a id="dHarta" target="_blank" rel="noopener" style="display:none; color:#0ca678; font-weight:700;">🗺️ Vezi pe hartă</a></div>
       </div>
     </div>
   </div>
@@ -330,7 +339,7 @@ function pozeFiltrate() {
   const q = cautare.toLowerCase();
   return poze.filter(p => {
     if (filtruEticheta !== null && !p.etichete.includes(filtruEticheta)) return false;
-    if (q && !p.nume.toLowerCase().includes(q) && !(p.descriere || '').toLowerCase().includes(q)) return false;
+    if (q && !p.nume.toLowerCase().includes(q) && !(p.descriere || '').toLowerCase().includes(q) && !(p.loc || '').toLowerCase().includes(q)) return false;
     return true;
   }).sort((a, b) => b.creat - a.creat);
 }
@@ -390,6 +399,13 @@ function renderGrid() {
     nume.className = 'nume';
     nume.textContent = p.nume;
     nume.title = p.nume;
+    let loc = null;
+    if (p.loc) {
+      loc = document.createElement('div');
+      loc.className = 'loc';
+      loc.textContent = '📍 ' + p.loc;
+      loc.title = p.loc;
+    }
     const tags = document.createElement('div');
     tags.className = 'taguri';
     const mele = etichete.filter(e => p.etichete.includes(e.id));
@@ -408,7 +424,7 @@ function renderGrid() {
       t.textContent = 'fără etichete';
       tags.appendChild(t);
     }
-    info.append(nume, tags);
+    if (loc) info.append(nume, loc, tags); else info.append(nume, tags);
     card.append(img, info);
     card.onclick = () => openDetail(p.id);
     grid.appendChild(card);
@@ -530,22 +546,86 @@ async function autoTagPoza(p) {
   }
 }
 
+// ---------- locatie (EXIF GPS + geocodare) ----------
+let exifrLoading = null;
+function loadExifr() {
+  if (!exifrLoading) {
+    exifrLoading = loadScript('https://cdn.jsdelivr.net/npm/exifr@7.1.3/dist/lite.umd.js')
+      .catch(e => { exifrLoading = null; throw e; });
+  }
+  return exifrLoading;
+}
+
+const geoCache = new Map();
+let ultimulGeocod = 0;
+
+async function reverseGeocode(lat, lon) {
+  const cheie = lat.toFixed(3) + ',' + lon.toFixed(3);
+  if (geoCache.has(cheie)) return geoCache.get(cheie);
+  // Nominatim cere max 1 cerere/secunda
+  const asteapta = Math.max(0, ultimulGeocod + 1100 - Date.now());
+  if (asteapta) await new Promise(r => setTimeout(r, asteapta));
+  ultimulGeocod = Date.now();
+  const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&zoom=14&accept-language=ro`);
+  if (!r.ok) throw new Error('geocodare esuata');
+  const j = await r.json();
+  const a = j.address || {};
+  const oras = a.city || a.town || a.village || a.municipality || a.county || '';
+  const rezultat = { loc: [oras, a.country || ''].filter(Boolean).join(', '), oras };
+  geoCache.set(cheie, rezultat);
+  return rezultat;
+}
+
+async function detecteazaLocatia(p) {
+  if (p.loc !== undefined) return false;
+  await loadExifr();
+  const gps = await exifr.gps(p.original).catch(() => null);
+  if (!gps || gps.latitude == null || gps.longitude == null) {
+    p.loc = null;
+    await savePoza(p);
+    return false;
+  }
+  p.lat = gps.latitude;
+  p.lon = gps.longitude;
+  let oras = '';
+  try {
+    const g = await reverseGeocode(p.lat, p.lon);
+    p.loc = g.loc || `${p.lat.toFixed(5)}, ${p.lon.toFixed(5)}`;
+    oras = g.oras;
+  } catch (e) {
+    console.warn('geocodare esuata', e);
+    p.loc = `${p.lat.toFixed(5)}, ${p.lon.toFixed(5)}`;
+  }
+  if (oras) {
+    const e = await creeazaEticheta('📍 ' + oras, '#0ca678');
+    if (!p.etichete.includes(e.id)) p.etichete.push(e.id);
+  }
+  await savePoza(p);
+  return true;
+}
+
 async function autoTagBatch(lista) {
   if (!lista.length) { toast('Nicio poză de analizat'); return; }
+  let ai = null;
   try {
-    await loadAi();
+    ai = await loadAi();
   } catch (e) {
     console.error(e);
-    toast('Recunoașterea automată nu e disponibilă momentan (verifică internetul). Poți eticheta manual.');
-    return;
+    toast('Recunoașterea obiectelor nu e disponibilă momentan — verific doar locațiile.');
   }
-  let total = 0;
+  let total = 0, cuLocatie = 0;
   for (let i = 0; i < lista.length; i++) {
     toast(`Analizez pozele… ${i + 1}/${lista.length}`);
-    try { total += await autoTagPoza(lista[i]); } catch (e) { console.error(e); }
+    try { if (await detecteazaLocatia(lista[i])) cuLocatie++; } catch (e) { console.error(e); }
+    if (ai) {
+      try { total += await autoTagPoza(lista[i]); } catch (e) { console.error(e); }
+    }
     render();
   }
-  toast(total ? `Gata! ${total} etichetă(e) pusă(e) automat ✨` : 'Analiză terminată — nimic sigur de etichetat la aceste poze.');
+  const parti = [];
+  if (total) parti.push(`${total} etichetă(e) pusă(e)`);
+  if (cuLocatie) parti.push(`locație găsită la ${cuLocatie} poză(e)`);
+  toast(parti.length ? `Gata! ${parti.join(', ')} ✨` : 'Analiză terminată — nimic nou de adăugat (pozele fără GPS rămân fără locație).');
 }
 
 // ---------- upload ----------
@@ -593,6 +673,20 @@ function openDetail(id) {
   $('dImg').src = viewUrl;
   $('dDescriere').value = p.descriere || '';
   $('dData').textContent = 'Încărcată la: ' + fmtData(p.creat);
+  const dLoc = $('dLoc');
+  if (p.loc) {
+    dLoc.textContent = '📍 ' + p.loc;
+    dLoc.classList.add('show');
+  } else {
+    dLoc.classList.remove('show');
+  }
+  const harta = $('dHarta');
+  if (p.lat != null && p.lon != null) {
+    harta.href = `https://www.google.com/maps?q=${p.lat},${p.lon}`;
+    harta.style.display = 'inline';
+  } else {
+    harta.style.display = 'none';
+  }
   renderDetailTags();
   $('detailOverlay').classList.add('open');
 }
@@ -777,13 +871,50 @@ $('dSaveDesc').onclick = async () => {
   render();
 };
 
-$('dDownload').onclick = () => {
+$('dDownload').onclick = async () => {
   if (!curent) return;
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(curent.original);
-  a.download = curent.nume;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  if (!curent.loc) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(curent.original);
+    a.download = curent.nume;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    return;
+  }
+  // scrie locatia pe imagine la descarcare
+  try {
+    const img = new Image();
+    const url = URL.createObjectURL(curent.original);
+    await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; img.src = url; });
+    const c = document.createElement('canvas');
+    c.width = img.naturalWidth;
+    c.height = img.naturalHeight;
+    const ctx = c.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+    URL.revokeObjectURL(url);
+    const fs = Math.max(18, Math.round(c.width * 0.028));
+    ctx.font = `700 ${fs}px Nunito, Arial, sans-serif`;
+    ctx.textBaseline = 'bottom';
+    ctx.shadowColor = 'rgba(0,0,0,.85)';
+    ctx.shadowBlur = fs * 0.4;
+    ctx.shadowOffsetY = 1;
+    ctx.fillStyle = '#fff';
+    ctx.fillText('📍 ' + curent.loc, Math.round(fs * 0.8), c.height - Math.round(fs * 0.6));
+    const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.92));
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = curent.nume.replace(/\.[^.]+$/, '') + ' - locatie.jpg';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  } catch (e) {
+    console.error(e);
+    toast('Nu am putut scrie locația pe imagine — descarc originalul.');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(curent.original);
+    a.download = curent.nume;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  }
 };
 
 $('dDelete').onclick = async () => {
@@ -802,24 +933,27 @@ $('dDelete').onclick = async () => {
 $('btnTags').onclick = () => { renderTagsManager(); $('tagsOverlay').classList.add('open'); };
 
 $('btnAutoAll').onclick = () => {
-  const faraEtichete = poze.filter(p => !p.etichete.length);
-  if (!faraEtichete.length) { toast('Toate pozele au deja etichete ✔'); return; }
-  autoTagBatch(faraEtichete);
+  const deAnalizat = poze.filter(p => !p.etichete.length || p.loc === undefined);
+  if (!deAnalizat.length) { toast('Toate pozele sunt deja analizate ✔'); return; }
+  autoTagBatch(deAnalizat);
 };
 
 $('dAutoTag').onclick = async () => {
   if (!curent) return;
   const p = curent;
+  toast('Analizez poza…');
+  let n = 0, gasitLoc = false;
+  try { gasitLoc = await detecteazaLocatia(p); } catch (e) { console.error(e); }
   try {
-    toast('Analizez poza…');
-    const n = await autoTagPoza(p);
-    toast(n ? `${n} etichetă(e) pusă(e) automat ✨` : 'Nimic sigur de etichetat la această poză.');
-    if (curent === p) renderDetailTags();
-    render();
+    n = await autoTagPoza(p);
   } catch (e) {
     console.error(e);
-    toast('Recunoașterea automată nu e disponibilă momentan (verifică internetul).');
+    toast('Recunoașterea obiectelor nu e disponibilă momentan (verifică internetul).');
   }
+  if (curent === p) openDetail(p.id);
+  render();
+  if (n || gasitLoc) toast(`Gata! ${n ? n + ' etichetă(e) pusă(e)' : ''}${n && gasitLoc ? ', ' : ''}${gasitLoc ? 'locație găsită' : ''} ✨`);
+  else toast('Nimic nou de adăugat la această poză (fără GPS în fișier).');
 };
 
 $('tNewAdd').onclick = async () => {
