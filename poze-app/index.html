@@ -212,7 +212,7 @@
           <button class="btn btn-sm btn-purple" id="dSaveDesc">Salvează descrierea</button>
         </div>
         <div class="footer-actions">
-          <button class="btn btn-sm btn-ghost" style="background:#f2f1f8;color:#2d3348" id="dDownload">⬇ Descarcă</button>
+          <button class="btn btn-sm btn-ghost" style="background:#f2f1f8;color:#2d3348" id="dDownload">⬇ Descarcă etichetată</button>
           <button class="btn btn-sm btn-danger" id="dDelete">🗑 Șterge</button>
         </div>
         <div class="datum" id="dData"></div>
@@ -361,6 +361,21 @@ function makeThumb(file) {
 
 function fmtData(ts) {
   return new Date(ts).toLocaleString('ro-RO', { dateStyle: 'long', timeStyle: 'short' });
+}
+
+function fmtDataScurta(ts) {
+  const d = new Date(ts);
+  const z = String(d.getDate()).padStart(2, '0');
+  const l = String(d.getMonth() + 1).padStart(2, '0');
+  return `${z}.${l}.${d.getFullYear()}`;
+}
+
+function textBanda(p) {
+  // textul scris pe poza: "Loc — data", ca in etichetarea din chat
+  const parti = [];
+  if (p.loc) parti.push((p.locEstimat ? 'probabil ' : '') + p.loc);
+  parti.push(fmtDataScurta(p.dataPoza || p.creat));
+  return parti.join(' — ');
 }
 
 // ---------- rendering ----------
@@ -609,6 +624,12 @@ async function reverseGeocode(lat, lon) {
 async function detecteazaLocatia(p) {
   if (p.loc !== undefined) return false;
   await loadExifr();
+  // data la care a fost facuta poza (EXIF), daca exista
+  try {
+    const meta = await exifr.parse(p.original);
+    const d = meta && (meta.DateTimeOriginal || meta.CreateDate);
+    if (d instanceof Date && !isNaN(d)) { p.dataPoza = d.getTime(); }
+  } catch (e) { /* fara data EXIF */ }
   const gps = await exifr.gps(p.original).catch(() => null);
   if (!gps || gps.latitude == null || gps.longitude == null) {
     p.loc = null;
@@ -800,7 +821,8 @@ async function handleFiles(files) {
     if (!thumb) { bad++; continue; }
     const rec = {
       nume: f.name, tip: f.type, original: f, thumb,
-      descriere: '', etichete: [], creat: Date.now()
+      descriere: '', etichete: [], creat: Date.now(),
+      dataPoza: f.lastModified || Date.now()
     };
     try {
       const id = await new Promise((resolve, reject) => {
@@ -837,7 +859,7 @@ function openDetail(id) {
   $('dData').textContent = 'Încărcată la: ' + fmtData(p.creat);
   const dLoc = $('dLoc');
   if (p.loc) {
-    dLoc.textContent = textLocatie(p);
+    dLoc.textContent = '📍 ' + textBanda(p);
     dLoc.classList.add('show');
   } else {
     dLoc.classList.remove('show');
@@ -1037,15 +1059,7 @@ $('dSaveDesc').onclick = async () => {
 
 $('dDownload').onclick = async () => {
   if (!curent) return;
-  if (!curent.loc) {
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(curent.original);
-    a.download = curent.nume;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-    return;
-  }
-  // scrie locatia pe imagine la descarcare
+  // scrie banda cu locatia si data pe imagine la descarcare
   try {
     const img = new Image();
     const url = URL.createObjectURL(curent.original);
@@ -1056,23 +1070,33 @@ $('dDownload').onclick = async () => {
     const ctx = c.getContext('2d');
     ctx.drawImage(img, 0, 0);
     URL.revokeObjectURL(url);
-    const fs = Math.max(18, Math.round(c.width * 0.028));
+
+    const text = textBanda(curent);
+    let fs = Math.max(20, Math.round(c.width * 0.035));
     ctx.font = `700 ${fs}px Nunito, Arial, sans-serif`;
-    ctx.textBaseline = 'bottom';
-    ctx.shadowColor = 'rgba(0,0,0,.85)';
-    ctx.shadowBlur = fs * 0.4;
-    ctx.shadowOffsetY = 1;
+    // micsoreaza fontul daca textul nu incape pe latime
+    while (fs > 12 && ctx.measureText(text).width > c.width - fs * 1.6) {
+      fs = Math.round(fs * 0.92);
+      ctx.font = `700 ${fs}px Nunito, Arial, sans-serif`;
+    }
+    const bandaH = Math.round(fs * 2.1);
+    ctx.fillStyle = 'rgba(22, 28, 40, 0.72)';
+    ctx.fillRect(0, c.height - bandaH, c.width, bandaH);
     ctx.fillStyle = '#fff';
-    ctx.fillText(textLocatie(curent), Math.round(fs * 0.8), c.height - Math.round(fs * 0.6));
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'rgba(0,0,0,.5)';
+    ctx.shadowBlur = 2;
+    ctx.fillText(text, Math.round(fs * 0.8), c.height - Math.round(bandaH / 2));
+
     const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.92));
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = curent.nume.replace(/\.[^.]+$/, '') + ' - locatie.jpg';
+    a.download = curent.nume.replace(/\.[^.]+$/, '') + ' - etichetata.jpg';
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 5000);
   } catch (e) {
     console.error(e);
-    toast('Nu am putut scrie locația pe imagine — descarc originalul.');
+    toast('Nu am putut scrie pe imagine — descarc originalul.');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(curent.original);
     a.download = curent.nume;
