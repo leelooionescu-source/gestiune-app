@@ -18,7 +18,7 @@
 
   header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
   header h1 { color: #fff; font-size: 1.6rem; font-weight: 800; text-shadow: 0 2px 8px rgba(0,0,0,.2); }
-  header .actions { display: flex; gap: 8px; }
+  header .actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
   .btn {
     border: none; border-radius: 10px; padding: 10px 16px; font-family: inherit;
@@ -137,6 +137,7 @@
   <header>
     <h1>🏷️ Poze cu Etichete</h1>
     <div class="actions">
+      <button class="btn btn-ghost" id="btnAutoAll">✨ Auto-etichetare</button>
       <button class="btn btn-ghost" id="btnTags">Gestionează etichetele</button>
       <button class="btn btn-primary" id="btnUpload">＋ Încarcă poze</button>
     </div>
@@ -162,7 +163,7 @@
   <div class="grid" id="grid"></div>
   <div class="empty" id="empty" style="display:none"></div>
 
-  <footer>Pozele se salvează în acest browser, pe acest dispozitiv.</footer>
+  <footer>Pozele se salvează în acest browser, pe acest dispozitiv. Recunoașterea automată rulează tot aici — pozele nu pleacă nicăieri.</footer>
 </div>
 
 <!-- photo detail modal -->
@@ -189,6 +190,9 @@
           <input type="text" id="dNewTagName" placeholder="Etichetă nouă...">
           <input type="color" id="dNewTagColor" value="#5b48c7" title="Culoare">
           <button class="btn btn-sm btn-purple" id="dNewTagAdd">＋</button>
+        </div>
+        <div class="row">
+          <button class="btn btn-sm btn-purple" id="dAutoTag" style="flex:1">✨ Etichetează automat</button>
         </div>
         <h3>Descriere</h3>
         <textarea id="dDescriere" rows="3" placeholder="Adaugă o descriere..."></textarea>
@@ -416,9 +420,138 @@ function render() {
   renderGrid();
 }
 
+// ---------- auto-etichetare (AI, ruleaza local in browser) ----------
+const AI_SCRIPTS = [
+  'https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js',
+  'https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js',
+  'https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.1/dist/mobilenet.min.js'
+];
+let aiModels = null;
+let aiLoading = null;
+
+const CULOARE_TAG = {
+  'Persoane': '#e03131', 'Animale': '#2f9e44', 'Vehicule': '#1971c2', 'Mâncare': '#e8590c',
+  'Băuturi': '#0c8599', 'Electronice': '#6741d9', 'Electrocasnice': '#9c36b5', 'Mobilier': '#846358',
+  'Sport': '#099268', 'Accesorii': '#d6336c', 'Peisaj': '#74b816', 'Flori': '#cc5de8',
+  'Clădiri': '#868e96', 'Documente': '#4263eb', 'Plante': '#66a80f', 'Stradă': '#f59f00', 'Obiecte': '#adb5bd'
+};
+
+const COCO_MAP = {
+  'person': 'Persoane',
+  'bicycle': 'Vehicule', 'car': 'Vehicule', 'motorcycle': 'Vehicule', 'airplane': 'Vehicule',
+  'bus': 'Vehicule', 'train': 'Vehicule', 'truck': 'Vehicule', 'boat': 'Vehicule',
+  'traffic light': 'Stradă', 'fire hydrant': 'Stradă', 'stop sign': 'Stradă', 'parking meter': 'Stradă',
+  'bench': 'Mobilier', 'chair': 'Mobilier', 'couch': 'Mobilier', 'bed': 'Mobilier', 'dining table': 'Mobilier',
+  'bird': 'Animale', 'cat': 'Animale', 'dog': 'Animale', 'horse': 'Animale', 'sheep': 'Animale',
+  'cow': 'Animale', 'elephant': 'Animale', 'bear': 'Animale', 'zebra': 'Animale', 'giraffe': 'Animale',
+  'teddy bear': 'Obiecte',
+  'backpack': 'Accesorii', 'umbrella': 'Accesorii', 'handbag': 'Accesorii', 'tie': 'Accesorii', 'suitcase': 'Accesorii',
+  'frisbee': 'Sport', 'skis': 'Sport', 'snowboard': 'Sport', 'sports ball': 'Sport', 'kite': 'Sport',
+  'baseball bat': 'Sport', 'baseball glove': 'Sport', 'skateboard': 'Sport', 'surfboard': 'Sport', 'tennis racket': 'Sport',
+  'bottle': 'Băuturi', 'wine glass': 'Băuturi', 'cup': 'Băuturi',
+  'fork': 'Mâncare', 'knife': 'Mâncare', 'spoon': 'Mâncare', 'bowl': 'Mâncare',
+  'banana': 'Mâncare', 'apple': 'Mâncare', 'sandwich': 'Mâncare', 'orange': 'Mâncare', 'broccoli': 'Mâncare',
+  'carrot': 'Mâncare', 'hot dog': 'Mâncare', 'pizza': 'Mâncare', 'donut': 'Mâncare', 'cake': 'Mâncare',
+  'potted plant': 'Plante',
+  'tv': 'Electronice', 'laptop': 'Electronice', 'mouse': 'Electronice', 'remote': 'Electronice',
+  'keyboard': 'Electronice', 'cell phone': 'Electronice',
+  'microwave': 'Electrocasnice', 'oven': 'Electrocasnice', 'toaster': 'Electrocasnice',
+  'sink': 'Electrocasnice', 'refrigerator': 'Electrocasnice',
+  'book': 'Documente', 'clock': 'Obiecte', 'vase': 'Obiecte', 'scissors': 'Obiecte',
+  'hair drier': 'Obiecte', 'toothbrush': 'Obiecte'
+};
+
+const MOBILENET_MAP = [
+  [['seashore', 'lakeside', 'sandbar', 'promontory', 'cliff', 'valley', 'volcano', 'alp', 'coral reef', 'geyser'], 'Peisaj'],
+  [['daisy', "lady's slipper", 'rapeseed'], 'Flori'],
+  [['castle', 'palace', 'monastery', 'church', 'mosque', 'dome', 'bell cote', 'triumphal arch', 'stupa', 'lighthouse', 'barn', 'greenhouse', 'library', 'boathouse'], 'Clădiri'],
+  [['menu', 'web site', 'envelope', 'binder', 'comic book', 'book jacket', 'notebook'], 'Documente'],
+  [['pizza', 'cheeseburger', 'hotdog', 'ice cream', 'pretzel', 'bagel', 'guacamole', 'carbonara', 'meat loaf', 'mashed potato', 'trifle', 'plate'], 'Mâncare'],
+  [['espresso', 'red wine', 'eggnog', 'beer glass', 'coffee mug', 'wine bottle', 'cocktail'], 'Băuturi'],
+  [['terrier', 'retriever', 'spaniel', 'poodle', 'shepherd', 'hound', 'bulldog', 'pug', 'husky', 'mastiff', 'collie', 'tabby', 'siamese', 'persian cat', 'egyptian cat'], 'Animale']
+];
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = resolve;
+    s.onerror = () => reject(new Error('nu s-a putut încărca ' + src));
+    document.head.appendChild(s);
+  });
+}
+
+async function loadAi() {
+  if (aiModels) return aiModels;
+  if (!aiLoading) {
+    aiLoading = (async () => {
+      toast('Se încarcă modelul de recunoaștere (doar prima dată)…');
+      for (const s of AI_SCRIPTS) await loadScript(s);
+      const det = await cocoSsd.load();
+      let cls = null;
+      try { cls = await mobilenet.load(); } catch (e) { console.warn('mobilenet indisponibil', e); }
+      aiModels = { det, cls };
+      return aiModels;
+    })().catch(e => { aiLoading = null; throw e; });
+  }
+  return aiLoading;
+}
+
+async function autoTagPoza(p) {
+  const { det, cls } = await loadAi();
+  const img = new Image();
+  const url = URL.createObjectURL(p.thumb || p.original);
+  try {
+    await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; img.src = url; });
+    const grupuri = new Set();
+    const detectii = await det.detect(img);
+    for (const d of detectii) {
+      if (d.score >= 0.55 && COCO_MAP[d.class]) grupuri.add(COCO_MAP[d.class]);
+    }
+    if (cls) {
+      const predictii = await cls.classify(img, 5);
+      for (const pr of predictii) {
+        if (pr.probability < 0.22) continue;
+        const nume = pr.className.toLowerCase();
+        for (const [chei, grup] of MOBILENET_MAP) {
+          if (chei.some(k => nume.includes(k))) { grupuri.add(grup); break; }
+        }
+      }
+    }
+    let adaugate = 0;
+    for (const g of grupuri) {
+      const e = await creeazaEticheta(g, CULOARE_TAG[g] || '#5b48c7');
+      if (!p.etichete.includes(e.id)) { p.etichete.push(e.id); adaugate++; }
+    }
+    if (adaugate) await savePoza(p);
+    return adaugate;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+async function autoTagBatch(lista) {
+  if (!lista.length) { toast('Nicio poză de analizat'); return; }
+  try {
+    await loadAi();
+  } catch (e) {
+    console.error(e);
+    toast('Recunoașterea automată nu e disponibilă momentan (verifică internetul). Poți eticheta manual.');
+    return;
+  }
+  let total = 0;
+  for (let i = 0; i < lista.length; i++) {
+    toast(`Analizez pozele… ${i + 1}/${lista.length}`);
+    try { total += await autoTagPoza(lista[i]); } catch (e) { console.error(e); }
+    render();
+  }
+  toast(total ? `Gata! ${total} etichetă(e) pusă(e) automat ✨` : 'Analiză terminată — nimic sigur de etichetat la aceste poze.');
+}
+
 // ---------- upload ----------
 async function handleFiles(files) {
   let ok = 0, bad = 0;
+  const noi = [];
   for (const f of files) {
     if (!f.type.startsWith('image/')) { bad++; continue; }
     const thumb = await makeThumb(f);
@@ -436,6 +569,7 @@ async function handleFiles(files) {
       });
       rec.id = id;
       poze.push(rec);
+      noi.push(rec);
       ok++;
     } catch (e) {
       bad++;
@@ -445,6 +579,7 @@ async function handleFiles(files) {
   if (ok) toast(`${ok} poză(e) încărcată(e) ✔`);
   if (bad) toast(`${bad} fișier(e) nu au putut fi încărcate (doar imagini)`);
   render();
+  if (noi.length) autoTagBatch(noi);
 }
 
 // ---------- detail modal ----------
@@ -665,6 +800,27 @@ $('dDelete').onclick = async () => {
 };
 
 $('btnTags').onclick = () => { renderTagsManager(); $('tagsOverlay').classList.add('open'); };
+
+$('btnAutoAll').onclick = () => {
+  const faraEtichete = poze.filter(p => !p.etichete.length);
+  if (!faraEtichete.length) { toast('Toate pozele au deja etichete ✔'); return; }
+  autoTagBatch(faraEtichete);
+};
+
+$('dAutoTag').onclick = async () => {
+  if (!curent) return;
+  const p = curent;
+  try {
+    toast('Analizez poza…');
+    const n = await autoTagPoza(p);
+    toast(n ? `${n} etichetă(e) pusă(e) automat ✨` : 'Nimic sigur de etichetat la această poză.');
+    if (curent === p) renderDetailTags();
+    render();
+  } catch (e) {
+    console.error(e);
+    toast('Recunoașterea automată nu e disponibilă momentan (verifică internetul).');
+  }
+};
 
 $('tNewAdd').onclick = async () => {
   const n = $('tNewName').value.trim();
