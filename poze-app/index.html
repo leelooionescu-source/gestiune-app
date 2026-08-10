@@ -111,7 +111,7 @@
   .tag-pill button { background: rgba(255,255,255,.3); border: none; color: inherit; border-radius: 50%; width: 16px; height: 16px; font-size: .7rem; cursor: pointer; line-height: 1; padding: 0; }
   .muted { color: #9a98b0; font-size: .85rem; }
   .row { display: flex; gap: 6px; margin-top: 8px; }
-  .row select, .row input[type=text], textarea {
+  .row select, .row input[type=text], .row input[type=password], textarea {
     flex: 1; min-width: 0; padding: 8px 10px; border: 1.5px solid #e2e0f0; border-radius: 8px;
     font-family: inherit; font-size: .88rem; outline: none;
   }
@@ -161,7 +161,7 @@
   <div class="panel">
     <div class="toolbar">
       <div class="search">
-        <input type="text" id="searchInput" placeholder="🔍 Caută după nume sau descriere...">
+        <input type="text" id="searchInput" placeholder="🔍 Caută după nume, descriere sau loc...">
       </div>
     </div>
     <div class="chips" id="chips"></div>
@@ -170,7 +170,8 @@
   <div class="grid" id="grid"></div>
   <div class="empty" id="empty" style="display:none"></div>
 
-  <footer>Pozele se salvează în acest browser, pe acest dispozitiv. Recunoașterea automată rulează tot aici — pozele nu pleacă nicăieri.</footer>
+  <footer>Pozele se salvează în acest browser, pe acest dispozitiv. Recunoașterea automată rulează tot aici — pozele nu pleacă nicăieri.
+    <a href="#" id="footKey" style="color:inherit; font-weight:700;">· 🔑 Cheie AI</a></footer>
 </div>
 
 <!-- photo detail modal -->
@@ -202,6 +203,9 @@
         <div class="row">
           <button class="btn btn-sm btn-purple" id="dAutoTag" style="flex:1">✨ Etichetează automat</button>
         </div>
+        <div class="row" id="dGuessRow" style="display:none">
+          <button class="btn btn-sm btn-purple" id="dGuess" style="flex:1; background:#f76707;">🔮 Ghicește locația (AI)</button>
+        </div>
         <h3>Descriere</h3>
         <textarea id="dDescriere" rows="3" placeholder="Adaugă o descriere..."></textarea>
         <div class="row">
@@ -232,6 +236,31 @@
         <button class="btn btn-sm btn-purple" id="tNewAdd">Adaugă</button>
       </div>
       <div id="tList" style="margin-top:12px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- AI key modal -->
+<div class="overlay" id="keyOverlay">
+  <div class="modal narrow">
+    <div class="modal-head">
+      <h2>🔑 Cheie AI (Anthropic)</h2>
+      <button class="close-x" data-close="keyOverlay">✕</button>
+    </div>
+    <div class="pad">
+      <p class="muted" style="margin-bottom:10px">
+        Pentru ghicirea locației din conținutul pozei e nevoie de o cheie API de la Anthropic
+        (console.anthropic.com). Cheia se salvează <strong>doar în acest browser</strong> și se
+        folosește direct de aici — nu apare nicăieri altundeva. Fiecare analiză costă câțiva bani
+        din contul tău Anthropic.
+      </p>
+      <div class="row" style="margin-top:0">
+        <input type="password" id="kInput" placeholder="sk-ant-...">
+        <button class="btn btn-sm btn-purple" id="kSave">Salvează</button>
+      </div>
+      <div class="row">
+        <button class="btn btn-sm btn-danger" id="kDelete" style="display:none">Șterge cheia din acest browser</button>
+      </div>
     </div>
   </div>
 </div>
@@ -403,8 +432,9 @@ function renderGrid() {
     if (p.loc) {
       loc = document.createElement('div');
       loc.className = 'loc';
-      loc.textContent = '📍 ' + p.loc;
+      loc.textContent = textLocatie(p);
       loc.title = p.loc;
+      if (p.locEstimat) loc.style.color = '#f76707';
     }
     const tags = document.createElement('div');
     tags.className = 'taguri';
@@ -596,12 +626,144 @@ async function detecteazaLocatia(p) {
     console.warn('geocodare esuata', e);
     p.loc = `${p.lat.toFixed(5)}, ${p.lon.toFixed(5)}`;
   }
+  p.locEstimat = false;
   if (oras) {
     const e = await creeazaEticheta('📍 ' + oras, '#0ca678');
     if (!p.etichete.includes(e.id)) p.etichete.push(e.id);
   }
   await savePoza(p);
   return true;
+}
+
+// ---------- ghicire locatie din continut (Claude AI) ----------
+const CHEIE_STORAGE = 'cheie-anthropic';
+
+const GHICIRE_SCHEMA = {
+  type: 'object',
+  properties: {
+    gasit: { type: 'boolean' },
+    oras: { type: 'string' },
+    tara: { type: 'string' },
+    loc: { type: 'string' },
+    lat: { anyOf: [{ type: 'number' }, { type: 'null' }] },
+    lon: { anyOf: [{ type: 'number' }, { type: 'null' }] },
+    incredere: { type: 'string', enum: ['mare', 'medie', 'mică'] },
+    motiv: { type: 'string' }
+  },
+  required: ['gasit', 'oras', 'tara', 'loc', 'lat', 'lon', 'incredere', 'motiv'],
+  additionalProperties: false
+};
+
+const GHICIRE_PROMPT = `Uită-te cu atenție la această fotografie și estimează unde a fost făcută.
+Folosește orice indiciu vizibil: repere, clădiri, arhitectură, indicatoare, texte, limbă, vegetație, relief, plăcuțe de înmatriculare.
+Răspunde în română. În câmpul "loc" pune forma scurtă "Oraș, Țară" (sau doar "Zonă, Țară" dacă orașul nu e clar).
+În "oras" pune doar numele orașului/localității (gol dacă nu știi). În "lat"/"lon" pune coordonate aproximative ale locului ghicit, sau null.
+În "motiv" explică pe scurt (1-2 propoziții) indiciile folosite.
+Dacă poza nu conține indicii suficiente pentru o estimare rezonabilă (de ex. un interior generic, un obiect pe fundal neutru), pune "gasit": false.`;
+
+function citesteCheia() {
+  try { return localStorage.getItem(CHEIE_STORAGE) || ''; } catch (e) { return ''; }
+}
+
+function deschideCheie() {
+  $('kInput').value = citesteCheia();
+  $('kDelete').style.display = citesteCheia() ? 'inline-flex' : 'none';
+  $('keyOverlay').classList.add('open');
+}
+
+function blobLaBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onload = () => resolve(fr.result.split(',')[1]);
+    fr.onerror = reject;
+    fr.readAsDataURL(blob);
+  });
+}
+
+function imaginePentruAi(p) {
+  // varianta redimensionata la max 1200px, ca sa pastram indiciile vizuale la cost mic
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(p.original);
+    img.onload = () => {
+      const max = 1200;
+      const scale = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width = Math.max(1, Math.round(img.width * scale));
+      c.height = Math.max(1, Math.round(img.height * scale));
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      c.toBlob(b => b ? resolve(b) : reject(new Error('conversie esuata')), 'image/jpeg', 0.85);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('imagine invalida')); };
+    img.src = url;
+  });
+}
+
+async function ghicesteLocatia(p) {
+  const cheie = citesteCheia();
+  if (!cheie) { deschideCheie(); return null; }
+  toast('Întreb AI-ul unde pare făcută poza…');
+  const b64 = await blobLaBase64(await imaginePentruAi(p));
+  const r = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-api-key': cheie,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-opus-5',
+      max_tokens: 2000,
+      output_config: {
+        effort: 'medium',
+        format: { type: 'json_schema', schema: GHICIRE_SCHEMA }
+      },
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b64 } },
+          { type: 'text', text: GHICIRE_PROMPT }
+        ]
+      }]
+    })
+  });
+  if (r.status === 401 || r.status === 403) {
+    toast('Cheia API nu e validă — verific-o și salveaz-o din nou.');
+    deschideCheie();
+    return null;
+  }
+  if (!r.ok) {
+    const err = await r.json().catch(() => null);
+    throw new Error((err && err.error && err.error.message) || 'eroare ' + r.status);
+  }
+  const raspuns = await r.json();
+  if (raspuns.stop_reason === 'refusal') {
+    toast('AI-ul nu a putut analiza această poză.');
+    return null;
+  }
+  const textBlock = (raspuns.content || []).find(b => b.type === 'text');
+  if (!textBlock) { toast('Răspuns neașteptat de la AI.'); return null; }
+  const rez = JSON.parse(textBlock.text);
+  if (!rez.gasit || !rez.loc) {
+    toast('AI-ul nu a găsit indicii suficiente ca să ghicească locul acestei poze.');
+    return null;
+  }
+  p.loc = rez.loc;
+  p.locEstimat = true;
+  if (rez.lat != null && rez.lon != null) { p.lat = rez.lat; p.lon = rez.lon; }
+  if (rez.oras) {
+    const e = await creeazaEticheta('📍 ' + rez.oras, '#f76707');
+    if (!p.etichete.includes(e.id)) p.etichete.push(e.id);
+  }
+  await savePoza(p);
+  return rez;
+}
+
+function textLocatie(p) {
+  if (!p.loc) return '';
+  return '📍 ' + (p.locEstimat ? 'probabil ' : '') + p.loc;
 }
 
 async function autoTagBatch(lista) {
@@ -675,11 +837,12 @@ function openDetail(id) {
   $('dData').textContent = 'Încărcată la: ' + fmtData(p.creat);
   const dLoc = $('dLoc');
   if (p.loc) {
-    dLoc.textContent = '📍 ' + p.loc;
+    dLoc.textContent = textLocatie(p);
     dLoc.classList.add('show');
   } else {
     dLoc.classList.remove('show');
   }
+  $('dGuessRow').style.display = (!p.loc || p.locEstimat) ? 'flex' : 'none';
   const harta = $('dHarta');
   if (p.lat != null && p.lon != null) {
     harta.href = `https://www.google.com/maps?q=${p.lat},${p.lon}`;
@@ -838,6 +1001,7 @@ document.addEventListener('keydown', e => {
     if (e.key === 'ArrowRight') navigheaza(1);
   } else if (e.key === 'Escape') {
     $('tagsOverlay').classList.remove('open');
+    $('keyOverlay').classList.remove('open');
   }
 });
 $('dPrev').onclick = () => navigheaza(-1);
@@ -899,7 +1063,7 @@ $('dDownload').onclick = async () => {
     ctx.shadowBlur = fs * 0.4;
     ctx.shadowOffsetY = 1;
     ctx.fillStyle = '#fff';
-    ctx.fillText('📍 ' + curent.loc, Math.round(fs * 0.8), c.height - Math.round(fs * 0.6));
+    ctx.fillText(textLocatie(curent), Math.round(fs * 0.8), c.height - Math.round(fs * 0.6));
     const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.92));
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
@@ -962,6 +1126,39 @@ $('tNewAdd').onclick = async () => {
   await creeazaEticheta(n, $('tNewColor').value);
   $('tNewName').value = '';
   renderTagsManager(); render();
+};
+
+$('dGuess').onclick = async () => {
+  if (!curent) return;
+  const p = curent;
+  try {
+    const rez = await ghicesteLocatia(p);
+    if (rez) {
+      toast(`Probabil: ${rez.loc} (încredere ${rez.incredere}) ✨`);
+      if (curent === p) openDetail(p.id);
+      render();
+    }
+  } catch (e) {
+    console.error(e);
+    toast('Ghicirea locației a eșuat: ' + e.message);
+  }
+};
+
+$('footKey').onclick = e => { e.preventDefault(); deschideCheie(); };
+
+$('kSave').onclick = () => {
+  const v = $('kInput').value.trim();
+  if (!v) { toast('Lipește cheia (începe cu sk-ant-...)'); return; }
+  try { localStorage.setItem(CHEIE_STORAGE, v); } catch (e) { toast('Nu am putut salva cheia'); return; }
+  $('keyOverlay').classList.remove('open');
+  toast('Cheie salvată în acest browser ✔ Apasă din nou pe „Ghicește locația".');
+};
+
+$('kDelete').onclick = () => {
+  try { localStorage.removeItem(CHEIE_STORAGE); } catch (e) {}
+  $('kInput').value = '';
+  $('keyOverlay').classList.remove('open');
+  toast('Cheia a fost ștearsă din acest browser.');
 };
 
 // ---------- init ----------
