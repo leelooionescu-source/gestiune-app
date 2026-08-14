@@ -75,6 +75,28 @@
   .empty { text-align: center; color: #fff; padding: 60px 20px; font-size: 1.05rem; font-weight: 600; text-shadow: 0 1px 4px rgba(0,0,0,.2); }
   .empty .big { font-size: 3rem; display: block; margin-bottom: 10px; }
 
+  /* ---------- calatorii ---------- */
+  .sect { font-size: .9rem; text-transform: uppercase; letter-spacing: .04em; color: #8a88a3; font-weight: 800; }
+  .albume { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; }
+  .album-card {
+    min-width: 150px; width: 150px; background: #f7f6fc; border-radius: 12px; overflow: hidden;
+    cursor: pointer; border: 1.5px solid #e2e0f0; flex-shrink: 0; transition: transform .12s;
+  }
+  .album-card:hover { transform: translateY(-2px); }
+  .album-card .a-cover { width: 100%; height: 80px; object-fit: cover; display: block; background: #e6e3f2; }
+  .album-card .a-gol { width: 100%; height: 80px; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; background: #e6e3f2; }
+  .album-card .a-body { padding: 6px 8px; }
+  .album-card .a-nume { font-size: .8rem; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .album-card .a-meta { font-size: .68rem; color: #9a98b0; font-weight: 600; }
+  .album-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .album-bar .album-info { flex: 1; min-width: 150px; }
+  .album-bar .album-nume { font-weight: 800; font-size: 1.05rem; }
+  .album-bar .album-meta { font-size: .8rem; color: #9a98b0; font-weight: 600; }
+  .zi-header {
+    grid-column: 1 / -1; color: #fff; font-weight: 800; font-size: .95rem;
+    text-shadow: 0 1px 4px rgba(0,0,0,.35); margin-top: 6px;
+  }
+
   /* ---------- modal ---------- */
   .overlay {
     position: fixed; inset: 0; background: rgba(20,18,40,.75); display: none;
@@ -158,6 +180,24 @@
     </div>
   </div>
 
+  <div class="panel" id="albumePanel">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:8px;">
+      <span class="sect">🧳 Călătoriile mele</span>
+      <button class="btn btn-sm btn-purple" id="btnAlbumNou">＋ Călătorie nouă</button>
+    </div>
+    <div class="albume" id="albume"></div>
+  </div>
+
+  <div class="panel album-bar" id="albumBar" style="display:none">
+    <button class="btn btn-sm" style="background:#f2f1f8;color:#2d3348" id="albumInapoi">← Toate pozele</button>
+    <div class="album-info">
+      <div class="album-nume" id="albumNume"></div>
+      <div class="album-meta" id="albumMeta"></div>
+    </div>
+    <button class="btn btn-sm btn-purple" id="albumEdit" title="Redenumește">✏️</button>
+    <button class="btn btn-sm btn-danger" id="albumSterge" title="Șterge călătoria">🗑</button>
+  </div>
+
   <div class="panel">
     <div class="toolbar">
       <div class="search">
@@ -206,6 +246,10 @@
         <div class="row" id="dGuessRow" style="display:none">
           <button class="btn btn-sm btn-purple" id="dGuess" style="flex:1; background:#f76707;">🔮 Ghicește locația (AI)</button>
         </div>
+        <h3>Călătorie</h3>
+        <div class="row" style="margin-top:0">
+          <select id="dAlbumSelect"></select>
+        </div>
         <h3>Descriere</h3>
         <textarea id="dDescriere" rows="3" placeholder="Adaugă o descriere..."></textarea>
         <div class="row">
@@ -236,6 +280,25 @@
         <button class="btn btn-sm btn-purple" id="tNewAdd">Adaugă</button>
       </div>
       <div id="tList" style="margin-top:12px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- album modal -->
+<div class="overlay" id="albumOverlay">
+  <div class="modal narrow">
+    <div class="modal-head">
+      <h2 id="albumModalTitlu">🧳 Călătorie nouă</h2>
+      <button class="close-x" data-close="albumOverlay">✕</button>
+    </div>
+    <div class="pad">
+      <div class="row" style="margin-top:0">
+        <input type="text" id="aNume" placeholder="Numele călătoriei (ex: Croazieră fiorduri 2025)">
+      </div>
+      <textarea id="aDescriere" rows="2" placeholder="Descriere (opțional)"></textarea>
+      <div class="row">
+        <button class="btn btn-sm btn-purple" id="aSave" style="flex:1">Salvează</button>
+      </div>
     </div>
   </div>
 </div>
@@ -276,7 +339,7 @@ let db;
 
 function openDb() {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, 1);
+    const req = indexedDB.open(DB_NAME, 2);
     req.onupgradeneeded = () => {
       const d = req.result;
       if (!d.objectStoreNames.contains('poze')) {
@@ -284,6 +347,9 @@ function openDb() {
       }
       if (!d.objectStoreNames.contains('etichete')) {
         d.createObjectStore('etichete', { keyPath: 'id', autoIncrement: true });
+      }
+      if (!d.objectStoreNames.contains('calatorii')) {
+        d.createObjectStore('calatorii', { keyPath: 'id', autoIncrement: true });
       }
     };
     req.onsuccess = () => resolve(req.result);
@@ -310,8 +376,11 @@ function getAll(store) {
 }
 
 // ---------- state ----------
-let poze = [];        // {id, nume, tip, original, thumb, descriere, etichete[], creat}
+let poze = [];        // {id, nume, tip, original, thumb, descriere, etichete[], creat, dataPoza?, lat?, lon?, loc?, locEstimat?, calatorieId?}
 let etichete = [];    // {id, nume, culoare}
+let calatorii = [];   // {id, nume, descriere, creat}
+let albumCurent = null;   // calatoria deschisa (sau null = toate pozele)
+let albumEditat = null;   // calatoria in curs de editare in modal
 let filtruEticheta = null;
 let cautare = '';
 let curent = null;    // photo currently open in detail modal
@@ -381,11 +450,99 @@ function textBanda(p) {
 // ---------- rendering ----------
 function pozeFiltrate() {
   const q = cautare.toLowerCase();
-  return poze.filter(p => {
+  const list = poze.filter(p => {
+    if (albumCurent && p.calatorieId !== albumCurent.id) return false;
     if (filtruEticheta !== null && !p.etichete.includes(filtruEticheta)) return false;
     if (q && !p.nume.toLowerCase().includes(q) && !(p.descriere || '').toLowerCase().includes(q) && !(p.loc || '').toLowerCase().includes(q)) return false;
     return true;
-  }).sort((a, b) => b.creat - a.creat);
+  });
+  // intr-o calatorie pozele curg cronologic, ca o poveste; altfel cele noi primele
+  if (albumCurent) return list.sort((a, b) => (a.dataPoza || a.creat) - (b.dataPoza || b.creat));
+  return list.sort((a, b) => b.creat - a.creat);
+}
+
+function pozeleAlbumului(alb) {
+  return poze.filter(p => p.calatorieId === alb.id)
+    .sort((a, b) => (a.dataPoza || a.creat) - (b.dataPoza || b.creat));
+}
+
+function metaAlbum(alb) {
+  const lista = pozeleAlbumului(alb);
+  if (!lista.length) return 'nicio poză încă';
+  const parti = [`${lista.length} poz${lista.length === 1 ? 'ă' : 'e'}`];
+  const prima = lista[0].dataPoza || lista[0].creat;
+  const ultima = lista[lista.length - 1].dataPoza || lista[lista.length - 1].creat;
+  parti.push(fmtDataScurta(prima) === fmtDataScurta(ultima)
+    ? fmtDataScurta(prima)
+    : fmtDataScurta(prima) + ' – ' + fmtDataScurta(ultima));
+  const locuri = [...new Set(lista.map(p => (p.loc || '').split(',')[0].trim()).filter(Boolean))];
+  if (locuri.length) parti.push(locuri.slice(0, 3).join(', ') + (locuri.length > 3 ? '…' : ''));
+  return parti.join(' · ');
+}
+
+function renderAlbume() {
+  const box = $('albume');
+  box.innerHTML = '';
+  if (!calatorii.length) {
+    box.innerHTML = '<div class="muted" style="padding:4px 0">Creează prima călătorie și adună pozele din vacanțe la un loc.</div>';
+    return;
+  }
+  for (const alb of [...calatorii].sort((a, b) => b.creat - a.creat)) {
+    const card = document.createElement('div');
+    card.className = 'album-card';
+    const lista = pozeleAlbumului(alb);
+    if (lista.length) {
+      const img = document.createElement('img');
+      img.className = 'a-cover';
+      img.src = thumbUrl(lista[lista.length - 1]);
+      img.alt = alb.nume;
+      card.appendChild(img);
+    } else {
+      const gol = document.createElement('div');
+      gol.className = 'a-gol';
+      gol.textContent = '🧳';
+      card.appendChild(gol);
+    }
+    const body = document.createElement('div');
+    body.className = 'a-body';
+    const nume = document.createElement('div');
+    nume.className = 'a-nume';
+    nume.textContent = alb.nume;
+    nume.title = alb.nume;
+    const meta = document.createElement('div');
+    meta.className = 'a-meta';
+    meta.textContent = metaAlbum(alb);
+    body.append(nume, meta);
+    card.appendChild(body);
+    card.onclick = () => deschideAlbum(alb.id);
+    box.appendChild(card);
+  }
+}
+
+function deschideAlbum(id) {
+  albumCurent = calatorii.find(a => a.id === id) || null;
+  filtruEticheta = null;
+  actualizeazaBaraAlbum();
+  render();
+}
+
+function inchideAlbum() {
+  albumCurent = null;
+  actualizeazaBaraAlbum();
+  render();
+}
+
+function actualizeazaBaraAlbum() {
+  $('albumePanel').style.display = albumCurent ? 'none' : 'block';
+  $('albumBar').style.display = albumCurent ? 'flex' : 'none';
+  const dz = $('dropzone');
+  if (albumCurent) {
+    $('albumNume').textContent = '🧳 ' + albumCurent.nume;
+    $('albumMeta').textContent = (albumCurent.descriere ? albumCurent.descriere + ' · ' : '') + metaAlbum(albumCurent);
+    dz.childNodes[2].textContent = ' Trage poze aici — intră direct în această călătorie ';
+  } else {
+    dz.childNodes[2].textContent = ' Trage pozele aici sau apasă pentru a le alege ';
+  }
 }
 
 function renderChips() {
@@ -396,12 +553,13 @@ function renderChips() {
 
   const all = document.createElement('button');
   all.className = 'chip all' + (filtruEticheta === null ? ' selected' : '');
-  all.textContent = `Toate (${poze.length})`;
+  all.textContent = `Toate (${pozeFiltrate().length + (filtruEticheta === null ? 0 : 0)})`;
   all.onclick = () => { filtruEticheta = null; render(); };
   box.appendChild(all);
 
   for (const e of [...etichete].sort((a, b) => a.nume.localeCompare(b.nume, 'ro'))) {
-    const cnt = poze.filter(p => p.etichete.includes(e.id)).length;
+    const cnt = poze.filter(p => p.etichete.includes(e.id) && (!albumCurent || p.calatorieId === albumCurent.id)).length;
+    if (albumCurent && !cnt) continue;
     const c = document.createElement('button');
     c.className = 'chip' + (filtruEticheta === e.id ? ' selected' : '');
     c.style.background = e.culoare;
@@ -430,7 +588,18 @@ function renderGrid() {
   }
   empty.style.display = 'none';
 
+  let ziCurenta = '';
   for (const p of list) {
+    if (albumCurent) {
+      const zi = new Date(p.dataPoza || p.creat).toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', year: 'numeric' });
+      if (zi !== ziCurenta) {
+        ziCurenta = zi;
+        const h = document.createElement('div');
+        h.className = 'zi-header';
+        h.textContent = '📅 ' + zi;
+        grid.appendChild(h);
+      }
+    }
     const card = document.createElement('div');
     card.className = 'card';
     const img = document.createElement('img');
@@ -477,6 +646,8 @@ function renderGrid() {
 }
 
 function render() {
+  renderAlbume();
+  if (albumCurent) actualizeazaBaraAlbum();
   renderChips();
   renderGrid();
 }
@@ -822,7 +993,8 @@ async function handleFiles(files) {
     const rec = {
       nume: f.name, tip: f.type, original: f, thumb,
       descriere: '', etichete: [], creat: Date.now(),
-      dataPoza: f.lastModified || Date.now()
+      dataPoza: f.lastModified || Date.now(),
+      calatorieId: albumCurent ? albumCurent.id : null
     };
     try {
       const id = await new Promise((resolve, reject) => {
@@ -871,6 +1043,15 @@ function openDetail(id) {
     harta.style.display = 'inline';
   } else {
     harta.style.display = 'none';
+  }
+  const selAlbum = $('dAlbumSelect');
+  selAlbum.innerHTML = '<option value="">— fără călătorie —</option>';
+  for (const alb of [...calatorii].sort((a, b) => b.creat - a.creat)) {
+    const o = document.createElement('option');
+    o.value = alb.id;
+    o.textContent = '🧳 ' + alb.nume;
+    if (p.calatorieId === alb.id) o.selected = true;
+    selAlbum.appendChild(o);
   }
   renderDetailTags();
   $('detailOverlay').classList.add('open');
@@ -1024,6 +1205,7 @@ document.addEventListener('keydown', e => {
   } else if (e.key === 'Escape') {
     $('tagsOverlay').classList.remove('open');
     $('keyOverlay').classList.remove('open');
+    $('albumOverlay').classList.remove('open');
   }
 });
 $('dPrev').onclick = () => navigheaza(-1);
@@ -1168,6 +1350,75 @@ $('dGuess').onclick = async () => {
   }
 };
 
+// ---------- calatorii ----------
+$('btnAlbumNou').onclick = () => {
+  albumEditat = null;
+  $('albumModalTitlu').textContent = '🧳 Călătorie nouă';
+  $('aNume').value = '';
+  $('aDescriere').value = '';
+  $('albumOverlay').classList.add('open');
+  $('aNume').focus();
+};
+
+$('albumInapoi').onclick = inchideAlbum;
+
+$('albumEdit').onclick = () => {
+  if (!albumCurent) return;
+  albumEditat = albumCurent;
+  $('albumModalTitlu').textContent = '✏️ Editează călătoria';
+  $('aNume').value = albumEditat.nume;
+  $('aDescriere').value = albumEditat.descriere || '';
+  $('albumOverlay').classList.add('open');
+};
+
+$('aSave').onclick = async () => {
+  const nume = $('aNume').value.trim();
+  if (!nume) { toast('Dă un nume călătoriei'); return; }
+  const descriere = $('aDescriere').value.trim();
+  if (albumEditat) {
+    albumEditat.nume = nume;
+    albumEditat.descriere = descriere;
+    await tx('calatorii', 'readwrite', s => s.put(albumEditat));
+    toast('Călătorie actualizată ✔');
+  } else {
+    const rec = { nume, descriere, creat: Date.now() };
+    rec.id = await new Promise((resolve, reject) => {
+      const t = db.transaction('calatorii', 'readwrite');
+      const req = t.objectStore('calatorii').add(rec);
+      req.onsuccess = () => resolve(req.result);
+      t.onerror = () => reject(t.error);
+    });
+    calatorii.push(rec);
+    toast(`Călătoria „${nume}" a fost creată ✔ Deschide-o și încarcă pozele.`);
+  }
+  $('albumOverlay').classList.remove('open');
+  actualizeazaBaraAlbum();
+  render();
+};
+
+$('albumSterge').onclick = async () => {
+  if (!albumCurent) return;
+  const alb = albumCurent;
+  if (!confirm(`Ștergi călătoria „${alb.nume}"? Pozele NU se șterg — rămân în galerie, doar ies din album.`)) return;
+  await tx('calatorii', 'readwrite', s => s.delete(alb.id));
+  calatorii = calatorii.filter(a => a.id !== alb.id);
+  for (const p of poze) {
+    if (p.calatorieId === alb.id) { p.calatorieId = null; await savePoza(p); }
+  }
+  albumCurent = null;
+  actualizeazaBaraAlbum();
+  render();
+  toast('Călătorie ștearsă — pozele au rămas în galerie.');
+};
+
+$('dAlbumSelect').onchange = async e => {
+  if (!curent) return;
+  curent.calatorieId = e.target.value ? parseInt(e.target.value) : null;
+  await savePoza(curent);
+  toast(curent.calatorieId ? 'Poză adăugată în călătorie ✔' : 'Poză scoasă din călătorie.');
+  render();
+};
+
 $('footKey').onclick = e => { e.preventDefault(); deschideCheie(); };
 
 $('kSave').onclick = () => {
@@ -1188,7 +1439,7 @@ $('kDelete').onclick = () => {
 // ---------- init ----------
 (async () => {
   db = await openDb();
-  [poze, etichete] = await Promise.all([getAll('poze'), getAll('etichete')]);
+  [poze, etichete, calatorii] = await Promise.all([getAll('poze'), getAll('etichete'), getAll('calatorii')]);
   render();
 })();
 </script>
