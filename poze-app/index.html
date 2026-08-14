@@ -194,6 +194,8 @@
       <div class="album-nume" id="albumNume"></div>
       <div class="album-meta" id="albumMeta"></div>
     </div>
+    <button class="btn btn-sm btn-purple" id="albumHarta" title="Harta călătoriei">🗺️ Hartă</button>
+    <button class="btn btn-sm btn-purple" id="albumExport" title="Exportă albumul">⬇ Export</button>
     <button class="btn btn-sm btn-purple" id="albumEdit" title="Redenumește">✏️</button>
     <button class="btn btn-sm btn-danger" id="albumSterge" title="Șterge călătoria">🗑</button>
   </div>
@@ -281,6 +283,17 @@
       </div>
       <div id="tList" style="margin-top:12px"></div>
     </div>
+  </div>
+</div>
+
+<!-- map modal -->
+<div class="overlay" id="mapOverlay">
+  <div class="modal" style="max-width:900px">
+    <div class="modal-head">
+      <h2 id="mapTitlu">🗺️ Harta călătoriei</h2>
+      <button class="close-x" data-close="mapOverlay">✕</button>
+    </div>
+    <div id="map" style="height:62vh; background:#e8ecf1;"></div>
   </div>
 </div>
 
@@ -1206,6 +1219,7 @@ document.addEventListener('keydown', e => {
     $('tagsOverlay').classList.remove('open');
     $('keyOverlay').classList.remove('open');
     $('albumOverlay').classList.remove('open');
+    $('mapOverlay').classList.remove('open');
   }
 });
 $('dPrev').onclick = () => navigheaza(-1);
@@ -1349,6 +1363,129 @@ $('dGuess').onclick = async () => {
     toast('Ghicirea locației a eșuat: ' + e.message);
   }
 };
+
+// ---------- harta calatoriei (Leaflet + OpenStreetMap) ----------
+let leafletLoading = null;
+let harta = null;
+
+function loadLeaflet() {
+  if (!leafletLoading) {
+    leafletLoading = (async () => {
+      const css = document.createElement('link');
+      css.rel = 'stylesheet';
+      css.href = 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css';
+      document.head.appendChild(css);
+      await loadScript('https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js');
+    })().catch(e => { leafletLoading = null; throw e; });
+  }
+  return leafletLoading;
+}
+
+async function arataHarta() {
+  if (!albumCurent) return;
+  const puncte = pozeleAlbumului(albumCurent).filter(p => p.lat != null && p.lon != null);
+  if (!puncte.length) {
+    toast('Nicio poză din această călătorie nu are locație — harta ar fi goală.');
+    return;
+  }
+  try {
+    await loadLeaflet();
+  } catch (e) {
+    console.error(e);
+    toast('Harta nu s-a putut încărca momentan (verifică internetul).');
+    return;
+  }
+  $('mapTitlu').textContent = '🗺️ ' + albumCurent.nume;
+  $('mapOverlay').classList.add('open');
+  if (harta) { harta.remove(); harta = null; }
+  harta = L.map('map');
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap'
+  }).addTo(harta);
+  const coords = [];
+  puncte.forEach((p, i) => {
+    const c = [p.lat, p.lon];
+    coords.push(c);
+    L.marker(c).addTo(harta)
+      .bindPopup(`<strong>${i + 1}. ${(p.loc || p.nume).replace(/</g, '&lt;')}</strong><br>${fmtDataScurta(p.dataPoza || p.creat)}`);
+  });
+  if (coords.length > 1) {
+    L.polyline(coords, { color: '#5b48c7', weight: 3, dashArray: '6 8' }).addTo(harta);
+  }
+  harta.fitBounds(L.latLngBounds(coords).pad(0.25));
+  setTimeout(() => harta.invalidateSize(), 150);
+}
+
+// ---------- export album ----------
+function esc(s) {
+  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+async function exportaAlbum() {
+  if (!albumCurent) return;
+  const lista = pozeleAlbumului(albumCurent);
+  if (!lista.length) { toast('Nicio poză în această călătorie.'); return; }
+  toast('Pregătesc albumul pentru export…');
+  const zile = new Map();
+  for (const p of lista) {
+    const zi = new Date(p.dataPoza || p.creat).toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', year: 'numeric' });
+    if (!zile.has(zi)) zile.set(zi, []);
+    const b64 = await blobLaBase64(p.thumb || p.original);
+    zile.get(zi).push({
+      src: 'data:image/jpeg;base64,' + b64,
+      banda: textBanda(p),
+      descriere: p.descriere || ''
+    });
+  }
+  let sectiuni = '';
+  for (const [zi, itemi] of zile) {
+    sectiuni += `<h2>📅 ${esc(zi)}</h2><div class="galerie">`;
+    for (const it of itemi) {
+      sectiuni += `<figure><img src="${it.src}" alt=""><figcaption>${esc(it.banda)}${it.descriere ? '<br><em>' + esc(it.descriere) + '</em>' : ''}</figcaption></figure>`;
+    }
+    sectiuni += '</div>';
+  }
+  const html = `<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${esc(albumCurent.nume)}</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: 'Nunito', 'Segoe UI', sans-serif; background: linear-gradient(135deg,#667eea 0%,#764ba2 100%); min-height:100vh; color:#2d3348; padding:30px 14px 50px; }
+  .foaie { max-width:1000px; margin:0 auto; }
+  h1 { color:#fff; text-align:center; font-size:1.7rem; text-shadow:0 2px 8px rgba(0,0,0,.25); }
+  .sub { color:rgba(255,255,255,.85); text-align:center; font-weight:600; margin:6px 0 24px; }
+  h2 { color:#fff; font-size:1.05rem; margin:22px 0 10px; text-shadow:0 1px 4px rgba(0,0,0,.3); }
+  .galerie { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:14px; }
+  figure { background:#fff; border-radius:14px; overflow:hidden; box-shadow:0 6px 20px rgba(0,0,0,.18); }
+  figure img { width:100%; display:block; }
+  figcaption { padding:8px 12px 10px; font-size:.85rem; font-weight:700; }
+  figcaption em { font-weight:600; color:#6c6a8a; }
+  footer { text-align:center; color:rgba(255,255,255,.7); font-size:.75rem; margin-top:30px; font-weight:600; }
+</style>
+</head>
+<body>
+<div class="foaie">
+  <h1>🧳 ${esc(albumCurent.nume)}</h1>
+  <div class="sub">${esc((albumCurent.descriere ? albumCurent.descriere + ' · ' : '') + metaAlbum(albumCurent))}</div>
+  ${sectiuni}
+  <footer>Album creat cu Poze cu Etichete</footer>
+</div>
+</body>
+</html>`;
+  const blob = new Blob([html], { type: 'text/html' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = albumCurent.nume.replace(/[\\/:*?"<>|]/g, '_') + '.html';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  toast('Album exportat ✔ Fișierul se poate deschide pe orice telefon sau calculator.');
+}
+
+$('albumHarta').onclick = () => { arataHarta().catch(e => { console.error(e); toast('Harta nu s-a putut afișa.'); }); };
+$('albumExport').onclick = () => { exportaAlbum().catch(e => { console.error(e); toast('Exportul a eșuat: ' + e.message); }); };
 
 // ---------- calatorii ----------
 $('btnAlbumNou').onclick = () => {
