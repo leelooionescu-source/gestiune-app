@@ -60,8 +60,14 @@
 
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 14px; }
   .card {
-    background: #fff; border-radius: 14px; overflow: hidden; cursor: pointer;
+    background: #fff; border-radius: 14px; overflow: hidden; cursor: pointer; position: relative;
     box-shadow: 0 4px 16px rgba(0,0,0,.14); transition: transform .15s, box-shadow .2s;
+  }
+  .card.selectat { outline: 3px solid #5b48c7; outline-offset: -3px; }
+  .card.selectat::after {
+    content: '✓'; position: absolute; top: 8px; right: 8px; width: 26px; height: 26px;
+    background: #5b48c7; color: #fff; border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; font-weight: 800; box-shadow: 0 2px 8px rgba(0,0,0,.35);
   }
   .card:hover { transform: translateY(-3px); box-shadow: 0 10px 26px rgba(0,0,0,.22); }
   .card img { width: 100%; height: 140px; object-fit: cover; display: block; background: #eee; }
@@ -205,8 +211,20 @@
       <div class="search">
         <input type="text" id="searchInput" placeholder="🔍 Caută după nume, descriere sau loc...">
       </div>
+      <button class="btn btn-sm btn-purple" id="btnSelect">☑ Selectează</button>
     </div>
     <div class="chips" id="chips"></div>
+  </div>
+
+  <div class="panel" id="selBar" style="display:none">
+    <div class="toolbar">
+      <strong id="selCount" style="min-width:90px">0 selectate</strong>
+      <button class="btn btn-sm" style="background:#f2f1f8;color:#2d3348" id="selToate">Selectează tot</button>
+      <select id="selAlbumTinta" style="padding:6px 10px; border:1.5px solid #e2e0f0; border-radius:8px; font-family:inherit; font-size:.85rem;"></select>
+      <button class="btn btn-sm btn-purple" id="selMuta">🧳 Mută</button>
+      <button class="btn btn-sm btn-danger" id="selSterge">🗑 Șterge</button>
+      <button class="btn btn-sm" style="background:#f2f1f8;color:#2d3348" id="selAnuleaza">✕ Gata</button>
+    </div>
   </div>
 
   <div class="grid" id="grid"></div>
@@ -397,6 +415,8 @@ let albumEditat = null;   // calatoria in curs de editare in modal
 let filtruEticheta = null;
 let cautare = '';
 let curent = null;    // photo currently open in detail modal
+let selectMode = false;
+const selectate = new Set();  // id-urile pozelor selectate
 const thumbUrls = new Map();
 let viewUrl = null;
 
@@ -653,9 +673,37 @@ function renderGrid() {
     }
     if (loc) info.append(nume, loc, tags); else info.append(nume, tags);
     card.append(img, info);
-    card.onclick = () => openDetail(p.id);
+    if (selectMode && selectate.has(p.id)) card.classList.add('selectat');
+    card.onclick = () => {
+      if (selectMode) {
+        if (selectate.has(p.id)) selectate.delete(p.id); else selectate.add(p.id);
+        card.classList.toggle('selectat');
+        $('selCount').textContent = selectate.size + ' selectate';
+      } else {
+        openDetail(p.id);
+      }
+    };
     grid.appendChild(card);
   }
+}
+
+function setSelectMode(on) {
+  selectMode = on;
+  if (!on) selectate.clear();
+  $('selBar').style.display = on ? 'block' : 'none';
+  $('btnSelect').textContent = on ? '☑ Selectare activă' : '☑ Selectează';
+  if (on) {
+    $('selCount').textContent = selectate.size + ' selectate';
+    const sel = $('selAlbumTinta');
+    sel.innerHTML = '<option value="">🧳 alege călătoria…</option><option value="0">— scoate din călătorie —</option>';
+    for (const alb of [...calatorii].sort((a, b) => b.creat - a.creat)) {
+      const o = document.createElement('option');
+      o.value = alb.id;
+      o.textContent = '🧳 ' + alb.nume;
+      sel.appendChild(o);
+    }
+  }
+  render();
 }
 
 function render() {
@@ -1554,6 +1602,46 @@ $('dAlbumSelect').onchange = async e => {
   await savePoza(curent);
   toast(curent.calatorieId ? 'Poză adăugată în călătorie ✔' : 'Poză scoasă din călătorie.');
   render();
+};
+
+// ---------- selectie multipla ----------
+$('btnSelect').onclick = () => setSelectMode(!selectMode);
+$('selAnuleaza').onclick = () => setSelectMode(false);
+
+$('selToate').onclick = () => {
+  pozeFiltrate().forEach(p => selectate.add(p.id));
+  $('selCount').textContent = selectate.size + ' selectate';
+  render();
+};
+
+$('selSterge').onclick = async () => {
+  if (!selectate.size) { toast('Nu ai selectat nicio poză.'); return; }
+  const n = selectate.size;
+  if (!confirm(`Ștergi definitiv ${n} poz${n === 1 ? 'ă' : 'e'}?`)) return;
+  for (const id of selectate) {
+    await tx('poze', 'readwrite', s => s.delete(id));
+    const url = thumbUrls.get(id);
+    if (url) { URL.revokeObjectURL(url); thumbUrls.delete(id); }
+  }
+  poze = poze.filter(p => !selectate.has(p.id));
+  setSelectMode(false);
+  toast(`${n} poz${n === 1 ? 'ă ștearsă' : 'e șterse'} ✔`);
+};
+
+$('selMuta').onclick = async () => {
+  if (!selectate.size) { toast('Nu ai selectat nicio poză.'); return; }
+  const v = $('selAlbumTinta').value;
+  if (v === '') { toast('Alege întâi călătoria din listă.'); return; }
+  const tinta = v === '0' ? null : parseInt(v);
+  const n = selectate.size;
+  for (const id of selectate) {
+    const p = poze.find(x => x.id === id);
+    if (p) { p.calatorieId = tinta; await savePoza(p); }
+  }
+  setSelectMode(false);
+  toast(tinta === null
+    ? `${n} poz${n === 1 ? 'ă scoasă' : 'e scoase'} din călătorie ✔`
+    : `${n} poz${n === 1 ? 'ă mutată' : 'e mutate'} în călătorie ✔`);
 };
 
 $('footKey').onclick = e => { e.preventDefault(); deschideCheie(); };
